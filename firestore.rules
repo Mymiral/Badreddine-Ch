@@ -1,0 +1,189 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: alerts
+    // Document ID: auto-generated
+    // Fields:
+    //   - type: string (required) - Property type
+    //   - location: string (required) - Target location
+    //   - budget: string (required) - Max budget
+    //   - email: string (optional) - User email
+    //   - phone: string (required) - User phone
+    //   - active: boolean (required) - Alert status
+    //   - channels: list (required) - Notification channels
+    //   - uid: string (required) - Owner UID
+    //   - createdAt: timestamp (required) - Creation time
+    //
+    // Collection: comments
+    // Document ID: auto-generated
+    // Fields:
+    //   - propertyId: string (required) - Property ID
+    //   - authorName: string (required) - Author name
+    //   - text: string (required) - Comment text
+    //   - uid: string (required) - Author UID
+    //   - createdAt: timestamp (required) - Creation time
+    //
+    // Collection: ratings
+    // Document ID: auto-generated
+    // Fields:
+    //   - propertyId: string (required) - Property ID
+    //   - authorName: string (required) - Author name
+    //   - score: int (required) - Rating 1-5
+    //   - uid: string (required) - Author UID
+    //   - createdAt: timestamp (required) - Creation time
+    //
+    // Collection: properties
+    // Document ID: auto-generated
+    // Fields:
+    //   - title: string (required)
+    //   - type: string (required)
+    //   - price: string (required)
+    //   - location: string (required)
+    //   - beds: int (required)
+    //   - baths: int (required)
+    //   - sqft: int (required)
+    //   - image: string (optional)
+    //   - images: list (optional)
+    //   - video: string (optional)
+    //   - description: string (optional)
+    //   - featured: boolean (optional)
+    //   - status: string (optional) - "available", "sold"
+    //   - coordinates: map (optional)
+    //   - uid: string (required)
+    //   - createdAt: timestamp (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "barahdid99@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidAlert(data) {
+      return hasOnlyAllowedFields(['type', 'location', 'budget', 'email', 'phone', 'active', 'channels', 'uid', 'createdAt']) &&
+             data.type is string && data.type.size() > 0 && data.type.size() < 100 &&
+             data.location is string && data.location.size() > 0 && data.location.size() < 100 &&
+             data.budget is string && data.budget.size() > 0 && data.budget.size() < 100 &&
+             (!('email' in data) || isValidEmail(data.email)) &&
+             data.phone is string && data.phone.size() > 0 && data.phone.size() < 20 &&
+             data.active is bool &&
+             data.channels is list && data.channels.size() > 0 && data.channels.size() <= 5 &&
+             data.uid == request.auth.uid &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidComment(data) {
+      return hasOnlyAllowedFields(['propertyId', 'authorName', 'text', 'uid', 'createdAt']) &&
+             data.propertyId is string && data.propertyId.size() > 0 &&
+             data.authorName is string && data.authorName.size() > 0 && data.authorName.size() < 100 &&
+             data.text is string && data.text.size() > 0 && data.text.size() < 1000 &&
+             data.uid == request.auth.uid &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidRating(data) {
+      return hasOnlyAllowedFields(['propertyId', 'authorName', 'score', 'uid', 'createdAt']) &&
+             data.propertyId is string && data.propertyId.size() > 0 &&
+             data.authorName is string && data.authorName.size() > 0 && data.authorName.size() < 100 &&
+             data.score is int && data.score >= 1 && data.score <= 5 &&
+             data.uid == request.auth.uid &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidProperty(data) {
+      return hasOnlyAllowedFields(['title', 'type', 'price', 'location', 'beds', 'baths', 'sqft', 'image', 'images', 'video', 'description', 'featured', 'status', 'coordinates', 'uid', 'createdAt']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.type is string && data.type.size() > 0 &&
+             data.price is string && data.price.size() > 0 &&
+             data.location is string && data.location.size() > 0 &&
+             data.beds is int && data.beds >= 0 &&
+             data.baths is int && data.baths >= 0 &&
+             data.sqft is int && data.sqft >= 0 &&
+             (!('image' in data) || data.image is string) &&
+             (!('images' in data) || data.images is list) &&
+             (!('video' in data) || data.video is string) &&
+             (!('description' in data) || data.description is string) &&
+             (!('featured' in data) || data.featured is bool) &&
+             (!('status' in data) || data.status in ['available', 'sold']) &&
+             (!('coordinates' in data) || (data.coordinates is map && data.coordinates.lat is number && data.coordinates.lng is number)) &&
+             data.uid == request.auth.uid &&
+              data.createdAt is timestamp;
+    }
+
+    // ===============================================================
+    // Match Rules
+    // ===============================================================
+
+    match /properties/{propertyId} {
+      allow read: if true; // Publicly readable
+      allow create: if isAuthenticated() && isValidProperty(request.resource.data);
+      allow update: if isDocOwner() && isValidProperty(request.resource.data) &&
+                      request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /alerts/{alertId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidAlert(request.resource.data);
+      allow update: if isDocOwner() && isValidAlert(request.resource.data) && 
+                      request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /comments/{commentId} {
+      allow read: if true; // Publicly readable
+      allow create: if isAuthenticated() && isValidComment(request.resource.data);
+      allow update: if isDocOwner() && isValidComment(request.resource.data) &&
+                      request.resource.data.createdAt == resource.data.createdAt &&
+                      request.resource.data.propertyId == resource.data.propertyId;
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /ratings/{ratingId} {
+      allow read: if true; // Publicly readable
+      allow create: if isAuthenticated() && isValidRating(request.resource.data);
+      allow update: if isDocOwner() && isValidRating(request.resource.data) &&
+                      request.resource.data.createdAt == resource.data.createdAt &&
+                      request.resource.data.propertyId == resource.data.propertyId;
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId) || isAdmin();
+    }
+  }
+}

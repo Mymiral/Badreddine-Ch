@@ -1,0 +1,232 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --background: 240 100% 98%; /* F7F7FF */
+    --foreground: 240 54% 11%; /* 0D0D2B */
+    --card: 0 0% 100%;
+    --card-foreground: 240 54% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 54% 11%;
+    --primary: 240 54% 11%; /* 0D0D2B */
+    --primary-foreground: 240 100% 98%;
+    --secondary: 272 60% 46%; /* 7B2FBE */
+    --secondary-foreground: 240 100% 98%;
+    --muted: 240 20% 95%;
+    --muted-foreground: 240 10% 40%;
+    --accent: 168 100% 48%; /* 00F5C4 */
+    --accent-foreground: 240 54% 11%;
+    --destructive: 349 100% 65%; /* FF4D6D */
+    --destructive-foreground: 240 100% 98%;
+    --border: 240 20% 90%;
+    --input: 240 20% 90%;
+    --ring: 168 100% 48%;
+    --radius: 0.5rem;
+    
+    /* Custom brand colors */
+    --brand-primary: #1565C0; /* Primary Blue */
+    --brand-secondary: #1565C0; /* Primary Blue */
+    --brand-accent: #FF6B00; /* Primary Orange */
+    --brand-highlight: #FF6B00; /* Primary Orange */
+    --brand-black: #0A0A0A; /* Dark BG */
+    --brand-white: #FFFFFF;
+    --brand-gray-1: #94a3b8;
+    --brand-gray-2: #f8fafc;
+    
+    /* Animation easings */
+    --ease-dramatic: cubic-bezier(0.87, 0, 0.13, 1);
+    --ease-expo-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-expo-in: cubic-bezier(0.7, 0, 0.84, 0);
+    --ease-elastic: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-liquid: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  .dark {
+    --background: 240 50% 6%; /* 080818 */
+    --foreground: 240 100% 98%; /* F7F7FF */
+    --card: 240 40% 10%;
+    --card-foreground: 240 100% 98%;
+    --popover: 240 40% 10%;
+    --popover-foreground: 240 100% 98%;
+    --primary: 168 100% 48%; /* 00F5C4 */
+    --primary-foreground: 240 50% 6%;
+    --secondary: 272 60% 46%; /* 7B2FBE */
+    --secondary-foreground: 240 100% 98%;
+    --muted: 240 30% 15%;
+    --muted-foreground: 240 10% 70%;
+    --accent: 168 100% 48%; /* 00F5C4 */
+    --accent-foreground: 240 50% 6%;
+    --destructive: 349 100% 65%; /* FF4D6D */
+    --destructive-foreground: 240 100% 98%;
+    --border: 240 30% 20%;
+    --input: 240 30% 20%;
+    --ring: 168 100% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+  }
+}
+
+@layer components {
+  .container-custom {
+    @apply max-w-[1336px] mx-auto px-5;
+  }
+  
+  .btn-primary {
+    @apply bg-brand-accent text-white px-6 py-3 rounded-lg font-medium transition-all duration-300;
+  }
+  
+  .btn-primary:hover {
+    @apply bg-brand-accent/90 text-white scale-105;
+    box-shadow: 0 8px 25px rgba(255, 107, 0, 0.3);
+  }
+  
+  .btn-secondary {
+    @apply bg-transparent text-brand-primary border-2 border-brand-primary px-6 py-3 rounded-lg font-medium transition-all duration-300;
+  }
+  
+  .btn-secondary:hover {
+    @apply bg-brand-primary text-white;
+  }
+  
+  .section-padding {
+    @apply py-20 lg:py-28;
+  }
+  
+  .text-gradient {
+    background: linear-gradient(135deg, var(--brand-accent), var(--brand-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.6s var(--ease-expo-out) forwards;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.6s var(--ease-expo-out) forwards;
+  }
+  
+  .animate-scale-in {
+    animation: scaleIn 0.5s var(--ease-spring) forwards;
+  }
+  
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+  
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+  
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+  
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(29, 169, 155, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 20px 10px rgba(29, 169, 155, 0.1);
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.5);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--brand-secondary);
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

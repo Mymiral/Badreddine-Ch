@@ -1,0 +1,94 @@
+{
+  "entities": {
+    "Alert": {
+      "title": "Property Alert",
+      "description": "User subscription for property notifications",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "description": "Property type (villa, apartment, etc.)" },
+        "location": { "type": "string", "description": "Target location/wilaya" },
+        "budget": { "type": "string", "description": "Maximum budget" },
+        "email": { "type": "string", "format": "email", "description": "User email" },
+        "phone": { "type": "string", "description": "User phone number" },
+        "active": { "type": "boolean", "description": "Whether the alert is active" },
+        "channels": { "type": "array", "items": { "type": "string" }, "description": "Selected notification channels" },
+        "uid": { "type": "string", "description": "User ID of the alert owner" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["type", "location", "budget", "phone", "active", "channels", "uid"]
+    },
+    "Comment": {
+      "title": "Property Comment",
+      "description": "User comment on a property",
+      "type": "object",
+      "properties": {
+        "propertyId": { "type": "string", "description": "ID of the property being commented on" },
+        "authorName": { "type": "string", "description": "Name of the commenter" },
+        "text": { "type": "string", "description": "Comment content" },
+        "uid": { "type": "string", "description": "User ID of the commenter" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["propertyId", "authorName", "text", "uid", "createdAt"]
+    },
+    "Rating": {
+      "title": "Property Rating",
+      "description": "User rating for a property",
+      "type": "object",
+      "properties": {
+        "propertyId": { "type": "string", "description": "ID of the property being rated" },
+        "authorName": { "type": "string", "description": "Name of the rater" },
+        "score": { "type": "integer", "description": "Rating score (1-5)" },
+        "uid": { "type": "string", "description": "User ID of the rater" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["propertyId", "authorName", "score", "uid", "createdAt"]
+    },
+    "Property": {
+      "title": "Real Estate Property",
+      "description": "A property listing",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "type": { "type": "string" },
+        "price": { "type": "string" },
+        "location": { "type": "string" },
+        "beds": { "type": "integer" },
+        "baths": { "type": "integer" },
+        "sqft": { "type": "integer" },
+        "image": { "type": "string" },
+        "images": { "type": "array", "items": { "type": "string" } },
+        "video": { "type": "string" },
+        "description": { "type": "string" },
+        "featured": { "type": "boolean" },
+        "coordinates": { 
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" }
+          }
+        },
+        "uid": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "type", "price", "location", "beds", "baths", "sqft", "uid", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/alerts/{alertId}": {
+      "schema": "Alert",
+      "description": "Collection of property alerts"
+    },
+    "/comments/{commentId}": {
+      "schema": "Comment",
+      "description": "Collection of property comments"
+    },
+    "/ratings/{ratingId}": {
+      "schema": "Rating",
+      "description": "Collection of property ratings"
+    },
+    "/properties/{propertyId}": {
+      "schema": "Property",
+      "description": "Collection of property listings"
+    }
+  }
+}
