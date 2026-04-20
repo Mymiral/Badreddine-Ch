@@ -90,7 +90,23 @@ const Hero = () => {
                 </label>
                 <LiveSearchBar 
                   initialValue={searchParams.location}
-                  onSearch={(val) => setSearchParams({ ...searchParams, location: val })}
+                  onSearch={(val, selection) => {
+                    const newParams = { ...searchParams, location: val };
+                    if (selection?.type === 'wilaya') {
+                      newParams.wilaya = selection.wilayaCode || '';
+                      newParams.commune = '';
+                    } else if (selection?.type === 'commune') {
+                      newParams.commune = selection.name;
+                      if (selection.wilayaCode) {
+                        newParams.wilaya = selection.wilayaCode;
+                      }
+                    }
+                    if (!val) {
+                      delete newParams.wilaya;
+                      delete newParams.commune;
+                    }
+                    setSearchParams(newParams);
+                  }}
                   placeholder={t('hero.search.locationPlaceholder')}
                 />
               </div>

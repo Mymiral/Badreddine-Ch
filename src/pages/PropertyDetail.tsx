@@ -10,16 +10,45 @@ import BackButton from '@/components/BackButton';
 import { EvaluationSection } from '@/components/EvaluationSection';
 import { CommentsSection } from '@/components/CommentsSection';
 import PropertyMap from '@/components/PropertyMap';
+import { MortgageCalculator } from '@/components/MortgageCalculator';
 import { useApp } from '@/contexts/AppContext';
 
 const PropertyDetail = () => {
   const { id } = useParams();
   const { t } = useTranslation();
-  const { formatPrice } = useApp();
+  const { formatPrice, currency, setCurrency } = useApp();
   const [property, setProperty] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeImage, setActiveImage] = useState(0);
+  const [isSaved, setIsSaved] = useState(false);
+  const [showVisitModal, setShowVisitModal] = useState(false);
+
+  const handleShare = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: property.title,
+          text: property.description,
+          url: window.location.href,
+        });
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        alert('Link copied to clipboard!');
+      }
+    } catch (err) {
+      console.error('Error sharing:', err);
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const toggleSave = () => {
+    setIsSaved(!isSaved);
+    // Ideally this would sync with Firebase or local storage
+  };
 
   useEffect(() => {
     const fetchProperty = async () => {
@@ -98,18 +127,43 @@ const PropertyDetail = () => {
           </div>
           
           <div className="flex flex-col md:items-end gap-4">
-            <div className="text-3xl md:text-4xl font-bold text-brand-accent">
-              {formatPrice(property.price)}
-              {property.type === 'rent' && <span className="text-lg text-muted-foreground font-normal"> {t('properties.perMonth')}</span>}
+            <div className="flex flex-col md:items-end gap-2">
+              <div className="flex items-center gap-2 mb-1">
+                <button 
+                  onClick={() => setCurrency('DZD')}
+                  className={`text-xs px-2 py-1 rounded font-bold transition-colors ${currency === 'DZD' ? 'bg-brand-accent text-brand-primary' : 'bg-muted text-muted-foreground'}`}
+                >
+                  DZD
+                </button>
+                <button 
+                  onClick={() => setCurrency('EUR')}
+                  className={`text-xs px-2 py-1 rounded font-bold transition-colors ${currency === 'EUR' ? 'bg-brand-accent text-brand-primary' : 'bg-muted text-muted-foreground'}`}
+                >
+                  EUR
+                </button>
+                <button 
+                  onClick={() => setCurrency('USD')}
+                  className={`text-xs px-2 py-1 rounded font-bold transition-colors ${currency === 'USD' ? 'bg-brand-accent text-brand-primary' : 'bg-muted text-muted-foreground'}`}
+                >
+                  USD
+                </button>
+              </div>
+              <div className="text-3xl md:text-4xl font-bold text-brand-accent">
+                {formatPrice(property.price)}
+                {property.type === 'rent' && <span className="text-lg text-muted-foreground font-normal"> {t('properties.perMonth')}</span>}
+              </div>
             </div>
             <div className="flex items-center gap-3">
-              <button className="p-2 rounded-full border border-border hover:bg-muted transition-colors text-muted-foreground">
+              <button onClick={handleShare} className="p-2 rounded-full border border-border hover:bg-muted transition-colors text-muted-foreground">
                 <Share2 className="w-5 h-5" />
               </button>
-              <button className="p-2 rounded-full border border-border hover:bg-muted transition-colors text-muted-foreground">
-                <Heart className="w-5 h-5" />
+              <button 
+                onClick={toggleSave} 
+                className={`p-2 rounded-full border border-border transition-colors ${isSaved ? 'bg-red-500/10 text-red-500 border-red-200' : 'hover:bg-muted text-muted-foreground'}`}
+              >
+                <Heart className={`w-5 h-5 ${isSaved ? 'fill-current' : ''}`} />
               </button>
-              <button className="p-2 rounded-full border border-border hover:bg-muted transition-colors text-muted-foreground">
+              <button onClick={handlePrint} className="p-2 rounded-full border border-border hover:bg-muted transition-colors text-muted-foreground hidden md:flex">
                 <Printer className="w-5 h-5" />
               </button>
             </div>
@@ -315,11 +369,60 @@ const PropertyDetail = () => {
                 >
                   Envoyer le message
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setShowVisitModal(true)}
+                  className="w-full bg-transparent border border-brand-accent text-brand-accent font-bold py-3 rounded-lg hover:bg-brand-accent/10 transition-colors mt-2"
+                >
+                  <Calendar className="w-4 h-4 inline-block mr-2" /> Demander une visite
+                </button>
               </form>
             </div>
+            
+            {/* Mortgage Calculator for Sales */}
+            {property.type === 'sale' && (
+              <MortgageCalculator propertyPrice={property.price} />
+            )}
           </div>
         </div>
       </div>
+
+      {/* Visit Modal */}
+      {showVisitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="bg-card w-full max-w-md rounded-2xl p-6 shadow-xl">
+            <h3 className="text-xl font-bold mb-4">Planifier une visite</h3>
+            <p className="text-sm text-muted-foreground mb-6">Proposez deux dates et heures qui vous conviennent, l'agent vous confirmera.</p>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Date souhaitée 1</label>
+                <input type="datetime-local" className="w-full px-4 py-2 rounded-lg border border-border bg-background" />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Date souhaitée 2</label>
+                <input type="datetime-local" className="w-full px-4 py-2 rounded-lg border border-border bg-background" />
+              </div>
+            </div>
+            <div className="flex gap-4 mt-8">
+              <button 
+                onClick={() => setShowVisitModal(false)}
+                className="flex-1 px-4 py-2 rounded-lg border border-border text-foreground hover:bg-muted font-bold transition-colors"
+              >
+                Annuler
+              </button>
+              <button 
+                onClick={() => {
+                  alert("Demande de visite envoyée !");
+                  setShowVisitModal(false);
+                }}
+                className="flex-1 px-4 py-2 rounded-lg bg-brand-accent text-brand-primary font-bold hover:bg-brand-accent/90 transition-colors"
+              >
+                Confirmer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

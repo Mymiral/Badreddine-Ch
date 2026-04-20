@@ -83,8 +83,8 @@ export default function MyAlerts() {
 
   if (!user && !hasSearched) {
     return (
-      <div className="pt-32 pb-20 min-h-screen bg-background">
-        <div className="container mx-auto px-4 max-w-4xl text-center">
+      <div className="w-full">
+        <div className="container mx-auto max-w-4xl text-center">
           <LogIn className="h-16 w-16 text-primary mx-auto mb-6" />
           <h1 className="text-3xl font-display font-bold mb-4">{l.login}</h1>
           <Button onClick={handleGoogleLogin} disabled={googleLoading} className="btn-luxury px-8 py-6 w-full max-w-xs flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
@@ -118,8 +118,8 @@ export default function MyAlerts() {
   }
 
   return (
-    <div className="pt-32 pb-20 min-h-screen bg-background">
-      <div className="container mx-auto px-4 max-w-4xl">
+    <div className="w-full">
+      <div className="container mx-auto max-w-4xl">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-display font-bold mb-4">{l.title}</h1>
           <p className="text-muted-foreground">{l.subtitle}</p>

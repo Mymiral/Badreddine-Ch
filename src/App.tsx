@@ -30,8 +30,10 @@ import PriceEstimator from '@/pages/PriceEstimator';
 import SocialHousing from '@/pages/SocialHousing';
 import Profile from '@/pages/Profile';
 import Favorites from '@/pages/Favorites';
+import MyAlertsPage from '@/pages/MyAlertsPage';
 import Welcome from '@/pages/Welcome';
 import { CookieConsent } from '@/components/CookieConsent';
+import ScrollToTop from '@/components/ScrollToTop';
 
 import './App.css';
 
@@ -55,7 +57,7 @@ function Layout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Header />
-      <main className="pb-16 md:pb-0">{children}</main>
+      <main className="pb-24 md:pb-0">{children}</main>
       <Footer />
       <BottomNav />
     </>
@@ -74,9 +76,11 @@ function AppRoutes() {
   }, [navigate, location]);
 
   return (
-    <Routes>
-      <Route path="/welcome" element={<Welcome />} />
-      {/* Public Routes */}
+    <>
+      <ScrollToTop />
+      <Routes>
+        <Route path="/welcome" element={<Welcome />} />
+        {/* Public Routes */}
       <Route
         path="/"
         element={
@@ -158,7 +162,13 @@ function AppRoutes() {
           <Favorites />
         </Layout>
       } />
+      <Route path="/my-alerts" element={
+        <Layout>
+          <MyAlertsPage />
+        </Layout>
+      } />
     </Routes>
+    </>
   );
 }
 

@@ -1,5 +1,5 @@
 {
   "name": "DarLinkDz",
   "description": "A premium real estate platform for high-end properties in Algeria with multi-language support.",
-  "requestFramePermissions": ["geolocation"]
+  "requestFramePermissions": ["geolocation", "microphone"]
 }

@@ -21,6 +21,7 @@ interface PropertyCardProps {
     agent?: {
       name: string;
       verified?: boolean;
+      phone?: string;
     };
   };
   highlighted?: boolean;
@@ -179,12 +180,12 @@ const PropertyCard = ({ property, highlighted }: PropertyCardProps) => {
         <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
           <Link
             to={`/property/${property.id}`}
-            className="text-sm font-medium text-brand-accent hover:text-brand-accent/80 transition-colors"
+            className="text-sm font-medium text-brand-accent hover:text-brand-accent/80 transition-colors inline-block"
           >
             {t('properties.details')}
           </Link>
           <a 
-            href={`https://wa.me/213000000000?text=${encodeURIComponent(`Bonjour, je suis intéressé par votre annonce: ${property.title}`)}`} 
+            href={`https://wa.me/${property.agent?.phone || '213000000000'}?text=${encodeURIComponent(`Bonjour, je suis intéressé par votre annonce: ${property.title}`)}`} 
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}

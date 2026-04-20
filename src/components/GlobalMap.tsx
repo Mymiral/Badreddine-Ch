@@ -1,5 +1,6 @@
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import { useTranslation } from 'react-i18next';
 import { useApp } from '@/contexts/AppContext';
 import { Property } from '@/data/properties';
 import { useState, useEffect, useCallback } from 'react';
@@ -39,7 +40,8 @@ function MapController({ center }: { center: [number, number] | null }) {
 }
 
 export default function GlobalMap() {
-  const { language, t } = useApp();
+  const { language } = useApp();
+  const { t } = useTranslation();
   const [properties, setProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);

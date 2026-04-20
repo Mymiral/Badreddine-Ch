@@ -5,9 +5,16 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useProperties } from '@/context/PropertyContext';
 import { wilayas } from '@/data/wilayas';
 
+export interface SearchSelection {
+  type: 'wilaya' | 'commune';
+  name: string;
+  wilayaCode?: string;
+  wilayaName?: string;
+}
+
 interface LiveSearchBarProps {
   initialValue?: string;
-  onSearch?: (query: string) => void;
+  onSearch?: (query: string, selection?: SearchSelection) => void;
   className?: string;
   placeholder?: string;
   showChip?: boolean;
@@ -60,7 +67,14 @@ export const LiveSearchBar: React.FC<LiveSearchBarProps> = ({
   };
 
   const getSuggestions = () => {
-    if (debouncedQuery.length < 2) return { wilayas: [], communes: [] };
+    if (debouncedQuery.length < 2) {
+      // Default suggestions for empty/short queries
+      const topWilayas = wilayas.slice(0, 5).map(w => {
+        const count = searchAnnouncements(w.name_fr, properties).length;
+        return { type: 'wilaya' as const, name: w.name_fr, nameAr: w.name_ar, count, wilayaCode: w.code };
+      });
+      return { wilayas: topWilayas, communes: [] };
+    }
     
     const q = debouncedQuery.toLowerCase().trim();
     
@@ -69,24 +83,22 @@ export const LiveSearchBar: React.FC<LiveSearchBarProps> = ({
       w.name_ar.includes(q)
     ).map(w => {
       const count = searchAnnouncements(w.name_fr, properties).length;
-      return { name: w.name_fr, nameAr: w.name_ar, count };
-    }).filter(w => w.count > 0).slice(0, 5);
+      return { type: 'wilaya' as const, name: w.name_fr, nameAr: w.name_ar, count, wilayaCode: w.code };
+    }).sort((a, b) => b.count - a.count).slice(0, 8);
 
     const matchedCommunes: any[] = [];
     wilayas.forEach(w => {
       w.communes.forEach(c => {
         if (c.name_fr.toLowerCase().includes(q) || c.name_ar.includes(q)) {
           const count = searchAnnouncements(c.name_fr, properties).length;
-          if (count > 0) {
-            matchedCommunes.push({ name: c.name_fr, nameAr: c.name_ar, wilaya: w.name_fr, count });
-          }
+          matchedCommunes.push({ type: 'commune' as const, name: c.name_fr, nameAr: c.name_ar, wilaya: w.name_fr, count, wilayaCode: w.code });
         }
       });
     });
 
     return { 
       wilayas: matchedWilayas, 
-      communes: matchedCommunes.sort((a, b) => b.count - a.count).slice(0, 5) 
+      communes: matchedCommunes.sort((a, b) => b.count - a.count).slice(0, 8) 
     };
   };
 
@@ -94,15 +106,28 @@ export const LiveSearchBar: React.FC<LiveSearchBarProps> = ({
   const hasSuggestions = suggestions.wilayas.length > 0 || suggestions.communes.length > 0;
   const totalResults = searchAnnouncements(debouncedQuery, properties).length;
 
-  const handleSelect = (value: string) => {
-    setQuery(value);
+  const handleSelect = (selection: any) => {
+    setQuery(selection.name);
     setIsOpen(false);
+    
+    const payload: SearchSelection = {
+      type: selection.type,
+      name: selection.name,
+      wilayaCode: selection.wilayaCode,
+      wilayaName: selection.type === 'commune' ? selection.wilaya : selection.name
+    };
+
     if (onSearch) {
-      onSearch(value);
+      onSearch(selection.name, payload);
     } else {
       // If no onSearch provided, navigate to properties page
       const params = new URLSearchParams(location.search);
-      params.set('location', value);
+      params.set('location', selection.name);
+      if (payload.type === 'wilaya' && payload.wilayaCode) {
+        params.set('wilaya', payload.wilayaCode);
+      } else if (payload.type === 'commune') {
+        params.set('commune', payload.name);
+      }
       navigate(`/properties?${params.toString()}`);
     }
   };
@@ -172,7 +197,7 @@ export const LiveSearchBar: React.FC<LiveSearchBarProps> = ({
         </div>
       )}
 
-      {isOpen && query.length >= 2 && (
+      {isOpen && (
         <div className="absolute z-50 w-full mt-2 bg-card border border-border rounded-xl shadow-xl overflow-hidden">
           {hasSuggestions ? (
             <div className="py-2">
@@ -183,7 +208,7 @@ export const LiveSearchBar: React.FC<LiveSearchBarProps> = ({
                     <button
                       key={i}
                       type="button"
-                      onClick={() => handleSelect(w.name)}
+                      onClick={() => handleSelect(w)}
                       className="w-full text-left px-4 py-2 hover:bg-muted flex items-center justify-between transition-colors"
                     >
                       <span className="font-medium">{w.name} <span className="text-muted-foreground text-sm ml-1">({w.nameAr})</span></span>
@@ -200,7 +225,7 @@ export const LiveSearchBar: React.FC<LiveSearchBarProps> = ({
                     <button
                       key={i}
                       type="button"
-                      onClick={() => handleSelect(c.name)}
+                      onClick={() => handleSelect(c)}
                       className="w-full text-left px-4 py-2 hover:bg-muted flex items-center justify-between transition-colors"
                     >
                       <div>
@@ -215,10 +240,10 @@ export const LiveSearchBar: React.FC<LiveSearchBarProps> = ({
             </div>
           ) : (
             <div className="p-4 text-center text-muted-foreground">
-              {t('common.noResults', 'Aucune annonce trouvée pour cette localisation')}
+              {t('common.noLocationFound', 'Aucune localisation trouvée')}
             </div>
           )}
-          
+
           <div className="bg-muted/50 px-4 py-3 border-t border-border text-sm text-center text-muted-foreground">
             {totalResults} {t('common.announcementsFound', 'annonces trouvées')} {query && `à ${query}`}
           </div>

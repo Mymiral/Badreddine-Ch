@@ -229,10 +229,33 @@ const Properties = () => {
                   <label className="text-sm font-medium">{t('publish.location', 'Location')}</label>
                   <LiveSearchBar 
                     initialValue={filters.location}
-                    onSearch={(val) => {
-                      setFilters(prev => ({ ...prev, location: val }));
-                      if (val) searchParams.set('location', val);
-                      else searchParams.delete('location');
+                    onSearch={(val, selection) => {
+                      const newFilters = { ...filters, location: val };
+                      
+                      if (!val) {
+                        newFilters.wilaya = '';
+                        newFilters.commune = '';
+                        searchParams.delete('location');
+                        searchParams.delete('wilaya');
+                        searchParams.delete('commune');
+                      } else {
+                        searchParams.set('location', val);
+                        if (selection?.type === 'wilaya') {
+                          newFilters.wilaya = selection.wilayaCode || '';
+                          newFilters.commune = '';
+                          if (selection.wilayaCode) searchParams.set('wilaya', selection.wilayaCode);
+                          searchParams.delete('commune');
+                        } else if (selection?.type === 'commune') {
+                          newFilters.commune = selection.name;
+                          searchParams.set('commune', selection.name);
+                          if (selection.wilayaCode) {
+                            newFilters.wilaya = selection.wilayaCode;
+                            searchParams.set('wilaya', selection.wilayaCode);
+                          }
+                        }
+                      }
+                      
+                      setFilters(newFilters);
                       setSearchParams(searchParams);
                     }}
                     showChip={true}

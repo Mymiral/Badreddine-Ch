@@ -3,11 +3,13 @@ import { useFirebase } from '@/contexts/FirebaseContext';
 import { Globe, Menu, X, Home, Plus, Map as MapIcon, LogIn, LogOut, User, LayoutGrid, Sun, Moon, Coins } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { loginWithGoogle, logout } from '@/lib/firebase';
+import { useTranslation } from 'react-i18next';
 import CreatePropertyModal from './CreatePropertyModal';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function Header() {
-  const { t, language, setLanguage, currency, setCurrency } = useApp();
+  const { language, setLanguage, currency, setCurrency } = useApp();
+  const { t } = useTranslation();
   const { user } = useFirebase();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);

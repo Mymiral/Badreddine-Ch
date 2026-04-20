@@ -73,13 +73,16 @@ const Header = () => {
             <Link
               key={link.name}
               to={link.path}
-              className={`text-sm font-medium transition-colors hover:text-brand-accent ${
+              className={`relative text-sm font-medium transition-colors hover:text-brand-accent py-2 group ${
                 location.pathname === link.path
                   ? 'text-brand-accent'
                   : 'text-white/80'
               }`}
             >
               {link.name}
+              <span className={`absolute bottom-0 left-0 w-full h-[2px] bg-brand-accent rounded-full transition-all duration-300 ${
+                location.pathname === link.path ? 'opacity-100 scale-x-100' : 'opacity-0 scale-x-0 group-hover:opacity-100 group-hover:scale-x-100'
+              } origin-left`}></span>
             </Link>
           ))}
         </nav>
@@ -129,28 +132,29 @@ const Header = () => {
           </button>
 
           {/* Auth / Publish */}
-          {user ? (
-            <div className="flex items-center gap-3">
-              <Link
-                to="/publish"
-                className="flex items-center gap-2 bg-brand-accent text-brand-primary px-4 py-2 rounded-lg font-medium hover:bg-brand-accent/90 transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                <span className="hidden lg:inline">{t('nav.submitProperty')}</span>
-              </Link>
-              <Link to="/profile" className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors">
-                <User className="w-5 h-5" />
-              </Link>
-            </div>
-          ) : (
+          <div className="flex items-center gap-3 ml-2">
             <Link
-              to="/login"
-              className="flex items-center gap-2 text-sm font-medium text-white hover:text-brand-accent transition-colors"
+              to="/publish"
+              className="group flex items-center gap-2 bg-brand-accent text-brand-primary px-4 py-2 rounded-lg font-bold hover:bg-brand-accent/90 transition-all transform hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(255,107,0,0.3)] hover:shadow-[0_0_25px_rgba(255,107,0,0.5)]"
             >
-              <User className="w-4 h-4" />
-              {t('auth.login')}
+              <Plus className="w-4 h-4 transition-transform group-hover:rotate-90" />
+              <span className="hidden lg:inline">{t('nav.submitProperty', 'Publier')}</span>
             </Link>
-          )}
+
+            {user ? (
+              <Link to="/profile" className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all border border-white/20 overflow-hidden transform hover:scale-105 group">
+                <User className="w-5 h-5 group-hover:text-brand-accent transition-colors" />
+              </Link>
+            ) : (
+              <Link
+                to="/login"
+                className="flex items-center gap-2 text-sm font-medium text-white hover:text-brand-accent transition-all bg-white/5 hover:bg-white/10 px-4 py-2 rounded-lg border border-white/10"
+              >
+                <User className="w-4 h-4" />
+                <span className="hidden xl:inline">{t('auth.login', 'Connexion')}</span>
+              </Link>
+            )}
+          </div>
         </div>
 
         {/* Mobile Menu Toggle */}

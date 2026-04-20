@@ -52,8 +52,16 @@ const PublishProperty = () => {
   const [uploads, setUploads] = useState<UploadItem[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<BlobPart[]>([]);
+  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -178,6 +186,7 @@ const PublishProperty = () => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
       audioChunksRef.current = [];
+      setRecordingTime(0);
       
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
@@ -198,6 +207,9 @@ const PublishProperty = () => {
       recorder.start();
       mediaRecorderRef.current = recorder;
       setIsRecording(true);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
     } catch (err) {
       console.error("Error accessing microphone", err);
       alert("Microphone access denied or unavailable.");
@@ -208,6 +220,9 @@ const PublishProperty = () => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+      }
     }
   };
 
@@ -679,12 +694,17 @@ const PublishProperty = () => {
                       onClick={isRecording ? stopRecording : startRecording}
                       className={`flex items-center gap-2 px-6 py-3 rounded-lg border transition-all ${
                         isRecording 
-                          ? 'bg-red-500/10 border-red-500 text-red-500 animate-pulse' 
+                          ? 'bg-red-500/10 border-red-500 text-red-500' 
                           : 'border-border hover:bg-muted text-foreground'
                       }`}
                     >
                       {isRecording ? (
-                        <><StopCircle className="w-5 h-5" /> Arrêter l'enregistrement</>
+                        <>
+                          <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse"></div>
+                          <span className="font-mono">{formatTime(recordingTime)}</span>
+                          <span className="mx-2 text-muted-foreground">|</span>
+                          <StopCircle className="w-5 h-5" /> Arrêter l'enregistrement
+                        </>
                       ) : (
                         <><Mic className="w-5 h-5 text-brand-accent" /> {t('publish.recordVoice')}</>
                       )}
