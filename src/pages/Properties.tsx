@@ -22,6 +22,15 @@ const Properties = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [showAlertModal, setShowAlertModal] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
+
+  const handleMarkerClick = (id: string) => {
+    setHighlightedId(id);
+    const element = document.getElementById(`property-card-${id}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
 
   // Filter states
   const [filters, setFilters] = useState({
@@ -366,21 +375,27 @@ const Properties = () => {
                   Effacer les filtres
                 </button>
               </div>
-            ) : viewMode === 'map' ? (
-              <PropertiesMap properties={filteredProperties} />
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filteredProperties.map((property, index) => (
-                  <motion.div
-                    key={property.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                  >
-                    <PropertyCard property={property} />
-                  </motion.div>
-                ))}
-              </div>
+              <>
+                {viewMode === 'map' && (
+                  <div className="mb-8">
+                    <PropertiesMap properties={filteredProperties} onMarkerClick={handleMarkerClick} />
+                  </div>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {filteredProperties.map((property, index) => (
+                    <motion.div
+                      key={property.id}
+                      id={`property-card-${property.id}`}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      <PropertyCard property={property} highlighted={highlightedId === property.id} />
+                    </motion.div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         </div>

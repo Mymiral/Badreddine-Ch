@@ -23,9 +23,10 @@ interface PropertyCardProps {
       verified?: boolean;
     };
   };
+  highlighted?: boolean;
 }
 
-const PropertyCard = ({ property }: PropertyCardProps) => {
+const PropertyCard = ({ property, highlighted }: PropertyCardProps) => {
   const { t } = useTranslation();
   const { formatPrice } = useApp();
   const [isFavorite, setIsFavorite] = useState(false);
@@ -52,7 +53,8 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
   return (
     <motion.div
       whileHover={{ y: -5 }}
-      className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:border-brand-accent transition-all duration-300 group"
+      animate={highlighted ? { scale: 1.02 } : { scale: 1 }}
+      className={`bg-card border ${highlighted ? 'border-brand-accent shadow-xl ring-2 ring-brand-accent/50' : 'border-border shadow-sm hover:shadow-xl hover:border-brand-accent'} rounded-2xl overflow-hidden transition-all duration-300 group`}
     >
       <div className="relative aspect-[4/3] overflow-hidden group/carousel">
         <AnimatePresence initial={false}>

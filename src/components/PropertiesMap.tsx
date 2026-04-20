@@ -16,9 +16,10 @@ const customIcon = new L.Icon({
 
 interface PropertiesMapProps {
   properties: any[];
+  onMarkerClick?: (id: string) => void;
 }
 
-export const PropertiesMap = ({ properties }: PropertiesMapProps) => {
+export const PropertiesMap = ({ properties, onMarkerClick }: PropertiesMapProps) => {
   const { formatPrice } = useApp();
 
   const validProperties = properties.filter(p => p.lat && p.lng);
@@ -36,7 +37,16 @@ export const PropertiesMap = ({ properties }: PropertiesMapProps) => {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {validProperties.map((property) => (
-          <Marker key={property.id} position={{ lat: property.lat, lng: property.lng }} icon={customIcon}>
+          <Marker 
+            key={property.id} 
+            position={{ lat: property.lat, lng: property.lng }} 
+            icon={customIcon}
+            eventHandlers={{
+              click: () => {
+                if (onMarkerClick) onMarkerClick(property.id);
+              }
+            }}
+          >
             <Popup className="property-popup">
               <div className="w-48">
                 <div className="aspect-video w-full rounded-lg overflow-hidden mb-2">
