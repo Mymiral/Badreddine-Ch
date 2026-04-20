@@ -1,26 +1,38 @@
 import { useState, useEffect } from 'react';
-import { useApp } from '@/contexts/AppContext';
-import { useFirebase } from '@/contexts/FirebaseContext';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/context/AuthContext';
 import { Search, Bell, Trash2, Power, PowerOff, LogIn } from 'lucide-react';
 import { Button } from './ui/button';
-import { db, loginWithGoogle, handleFirestoreError, OperationType } from '@/lib/firebase';
+import { db, handleFirestoreError, OperationType, loginWithGoogle } from '@/lib/firebase';
 import { collection, query, where, getDocs, updateDoc, deleteDoc, doc, onSnapshot } from 'firebase/firestore';
 
 export default function MyAlerts() {
-  const { language } = useApp();
-  const { user } = useFirebase();
+  const { t, i18n } = useTranslation();
+  const { user } = useAuth();
   const [searchPhone, setSearchPhone] = useState('');
   const [alerts, setAlerts] = useState<any[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    try {
+      await loginWithGoogle();
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const labels = {
     fr: { title: 'Mes alertes', subtitle: 'Gérez vos alertes immobilières', search: 'Rechercher par téléphone', placeholder: 'Ex: 05XX XX XX XX', noAlerts: 'Aucune alerte trouvée.', active: 'Active', inactive: 'Inactive', login: 'Connectez-vous pour voir vos alertes' },
     en: { title: 'My Alerts', subtitle: 'Manage your property alerts', search: 'Search by phone', placeholder: 'Ex: 05XX XX XX XX', noAlerts: 'No alerts found.', active: 'Active', inactive: 'Inactive', login: 'Login to see your alerts' },
-    ar: { title: 'تنبيهاتي', subtitle: 'إدارة تنبيهاتك العقارية', search: 'بحث برقم الهاتف', placeholder: 'مثال: 05XX XX XX XX', noAlerts: 'لم يتم العثور على تنبيهات.', active: 'نشط', inactive: 'غير نشط', login: 'سجل الدخول لرؤية تنبيهاتك' }
+    ar: { title: 'تنبيهاتي', subtitle: 'إدارة تنبيهاتك العقارية', search: 'بحث برقم الهاتف', placeholder: 'مثال: 05XX XX XX XX', noAlerts: 'لم يتم العثور على تنبيهات.', active: 'نشط', inactive: 'غير نشط', login: 'سجل الدخول لرؤية تنبيهاتك' },
+    tzm: { title: 'Timinatin inu', subtitle: 'Ssefrek timinatin n wayla', search: 'Nadi s utilifun', placeholder: 'Amedya: 05XX XX XX XX', noAlerts: 'Ur d nufi ula d yiwet n tminut.', active: 'Termed', inactive: 'Ur termed ara', login: 'Kcem akken ad twaliḍ timinatin inek' }
   };
 
-  const l = labels[language as keyof typeof labels] || labels.en;
+  const currentLang = i18n.language.split('-')[0];
+  const l = labels[currentLang as keyof typeof labels] || labels.en;
 
   useEffect(() => {
     if (!user) return;
@@ -75,9 +87,15 @@ export default function MyAlerts() {
         <div className="container mx-auto px-4 max-w-4xl text-center">
           <LogIn className="h-16 w-16 text-primary mx-auto mb-6" />
           <h1 className="text-3xl font-display font-bold mb-4">{l.login}</h1>
-          <Button onClick={loginWithGoogle} className="btn-luxury px-8 py-6">
-            <LogIn className="h-4 w-4 mr-2" />
-            Google Login
+          <Button onClick={handleGoogleLogin} disabled={googleLoading} className="btn-luxury px-8 py-6 w-full max-w-xs flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+            {googleLoading ? (
+              <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <>
+                <LogIn className="h-4 w-4 mr-2" />
+                Google Login
+              </>
+            )}
           </Button>
           <div className="mt-12 p-8 bg-card rounded-2xl border border-border">
             <p className="text-muted-foreground mb-6">Ou recherchez par numéro de téléphone :</p>
@@ -89,8 +107,8 @@ export default function MyAlerts() {
                 placeholder={l.placeholder}
                 className="flex-grow bg-background border border-border rounded-xl px-4 py-3 outline-none"
               />
-              <Button onClick={handleSearch} disabled={loading} className="btn-luxury px-8">
-                {loading ? '...' : l.search}
+              <Button onClick={handleSearch} disabled={loading} className="btn-luxury px-8 flex items-center justify-center min-w-[120px] disabled:opacity-50 disabled:cursor-not-allowed">
+                {loading ? <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div> : l.search}
               </Button>
             </div>
           </div>

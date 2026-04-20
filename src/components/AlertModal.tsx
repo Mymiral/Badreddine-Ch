@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/context/AuthContext';
 import { X, Bell, CheckCircle2, LogIn } from 'lucide-react';
 import { Button } from './ui/button';
-import { useApp } from '@/contexts/AppContext';
-import { useFirebase } from '@/contexts/FirebaseContext';
-import { db, loginWithGoogle, handleFirestoreError, OperationType } from '@/lib/firebase';
+import { db, handleFirestoreError, OperationType, loginWithGoogle } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 interface AlertModalProps {
@@ -11,10 +11,20 @@ interface AlertModalProps {
 }
 
 export default function AlertModal({ onClose }: AlertModalProps) {
-  const { language } = useApp();
-  const { user } = useFirebase();
+  const { t, i18n } = useTranslation();
+  const { user } = useAuth();
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    try {
+      await loginWithGoogle();
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
   const [formData, setFormData] = useState({
     type: 'Villa',
     location: '',
@@ -27,10 +37,12 @@ export default function AlertModal({ onClose }: AlertModalProps) {
   const labels = {
     fr: { title: 'Créer une alerte', subtitle: 'Soyez informé des nouveaux biens', type: 'Type de bien', budget: 'Budget max', email: 'Votre email', phone: 'Téléphone', location: 'Localisation', submit: 'Activer l\'alerte', success: 'Alerte activée !', login: 'Se connecter pour créer une alerte' },
     en: { title: 'Create Alert', subtitle: 'Get notified of new properties', type: 'Property Type', budget: 'Max Budget', email: 'Your email', phone: 'Phone', location: 'Location', submit: 'Activate Alert', success: 'Alert activated!', login: 'Login to create an alert' },
-    ar: { title: 'إنشاء تنبيه', subtitle: 'احصل على إشعارات بالعقارات الجديدة', type: 'نوع العقار', budget: 'الميزانية القصوى', email: 'بريدك الإلكتروني', phone: 'الهاتف', location: 'الموقع', submit: 'تفعيل التنبيه', success: 'تم تفعيل التنبيه!', login: 'سجل الدخول لإنشاء تنبيه' }
+    ar: { title: 'إنشاء تنبيه', subtitle: 'احصل على إشعارات بالعقارات الجديدة', type: 'نوع العقار', budget: 'الميزانية القصوى', email: 'بريدك الإلكتروني', phone: 'الهاتف', location: 'الموقع', submit: 'تفعيل التنبيه', success: 'تم تفعيل التنبيه!', login: 'سجل الدخول لإنشاء تنبيه' },
+    tzm: { title: 'Xleq taminut', subtitle: 'Awi isalan f wayla amaynut', type: 'Anaw n wayla', budget: 'Tasebbalt tafellayt', email: 'Imayl inek', phone: 'Tiliɣri', location: 'Adeg', submit: 'Sermed taminut', success: 'Taminut termed!', login: 'Kcem akken ad txelqeḍ taminut' }
   };
 
-  const l = labels[language as keyof typeof labels] || labels.en;
+  const currentLang = i18n.language.split('-')[0];
+  const l = labels[currentLang as keyof typeof labels] || labels.en;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,9 +81,15 @@ export default function AlertModal({ onClose }: AlertModalProps) {
         <div className="relative bg-card w-full max-w-md rounded-2xl shadow-2xl border border-border p-12 text-center animate-in zoom-in-95 duration-300">
           <LogIn className="h-16 w-16 text-primary mx-auto mb-6" />
           <h2 className="text-2xl font-display font-bold mb-4">{l.login}</h2>
-          <Button onClick={loginWithGoogle} className="w-full btn-luxury py-6">
-            <LogIn className="h-4 w-4 mr-2" />
-            Google Login
+          <Button onClick={handleGoogleLogin} disabled={googleLoading} className="w-full btn-luxury py-6 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+            {googleLoading ? (
+              <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <>
+                <LogIn className="h-4 w-4 mr-2" />
+                Google Login
+              </>
+            )}
           </Button>
         </div>
       </div>
@@ -195,9 +213,15 @@ export default function AlertModal({ onClose }: AlertModalProps) {
             </div>
           </div>
 
-          <Button type="submit" disabled={loading} className="w-full btn-luxury py-6">
-            <Bell className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            {loading ? '...' : l.submit}
+          <Button type="submit" disabled={loading} className="w-full btn-luxury py-6 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+            {loading ? (
+              <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <>
+                <Bell className="h-4 w-4 mr-2" />
+                {l.submit}
+              </>
+            )}
           </Button>
         </form>
       </div>

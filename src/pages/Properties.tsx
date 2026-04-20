@@ -9,6 +9,8 @@ import AlgeriaMapFilter from '@/components/AlgeriaMapFilter';
 import { PropertiesMap } from '@/components/PropertiesMap';
 
 import { LiveSearchBar } from '@/components/LiveSearchBar';
+import AlertModal from '@/components/AlertModal';
+import { Bell } from 'lucide-react';
 
 import { wilayas } from '@/data/wilayas';
 
@@ -18,6 +20,7 @@ const Properties = () => {
   const { properties, loading, error } = useProperties();
   const [filteredProperties, setFilteredProperties] = useState(properties);
   const [showFilters, setShowFilters] = useState(false);
+  const [showAlertModal, setShowAlertModal] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
 
   // Filter states
@@ -145,6 +148,13 @@ const Properties = () => {
           </div>
           
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowAlertModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-brand-accent text-brand-primary font-medium rounded-lg hover:bg-brand-accent/90 transition-colors"
+            >
+              <Bell className="w-5 h-5" />
+              <span className="hidden md:inline">{t('common.createAlert', 'Créer une alerte')}</span>
+            </button>
             <div className="hidden md:flex bg-muted p-1 rounded-lg">
               <button
                 onClick={() => setViewMode('grid')}
@@ -375,6 +385,10 @@ const Properties = () => {
           </div>
         </div>
       </div>
+      
+      {showAlertModal && (
+        <AlertModal onClose={() => setShowAlertModal(false)} />
+      )}
     </div>
   );
 };
