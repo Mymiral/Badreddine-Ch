@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Property } from '@/data/properties';
+import { Property } from '@/types';
 import { X, Send, CheckCircle2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { useApp } from '@/contexts/AppContext';

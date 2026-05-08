@@ -254,6 +254,7 @@ const PublishProperty = () => {
         audio: formData.audio,
         images: uploadedImageUrls,
         agentId: user.uid,
+        agentName: user.displayName || user.email?.split('@')[0] || 'Agent',
         featured: false,
         createdAt: serverTimestamp(),
         lat: mapPosition?.lat || null,
@@ -261,6 +262,40 @@ const PublishProperty = () => {
       };
 
       await addDoc(collection(db, 'properties'), propertyData);
+
+      // Also try saving to Supabase if configured
+      try {
+        // Dynamic import of supabase client to avoid issues if not configured globally
+        const { supabase } = await import('@/supabase');
+        const { error: supabaseError } = await supabase
+          .from('properties')
+          .insert([{
+            title: propertyData.title,
+            type: propertyData.type,
+            property_type: propertyData.propertyType,
+            price: propertyData.price,
+            location: propertyData.location,
+            address: propertyData.address,
+            city: propertyData.city,
+            bedrooms: propertyData.bedrooms,
+            bathrooms: propertyData.bathrooms,
+            area: propertyData.area,
+            images: propertyData.images,
+            video: propertyData.video,
+            audio: propertyData.audio,
+            description: propertyData.description,
+            featured: propertyData.featured,
+            lat: propertyData.lat,
+            lng: propertyData.lng,
+            agent_id: propertyData.agentId,
+            status: 'available',
+            created_at: new Date().toISOString()
+          }]);
+        
+        if (supabaseError) console.error('Supabase save error:', supabaseError.message);
+      } catch (supaErr) {
+        console.error('Supabase integration error:', supaErr);
+      }
       
       // Smart Alert Matching Logic
       try {

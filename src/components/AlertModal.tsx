@@ -51,19 +51,16 @@ export default function AlertModal({ onClose }: AlertModalProps) {
 
       // Also try saving to Supabase if configured
       try {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        if (supabaseUrl) {
-          const { error: supabaseError } = await supabase
-            .from('alerts')
-            .insert([{
-              ...formData,
-              uid: user?.uid || 'anonymous',
-              active: true,
-              created_at: new Date().toISOString()
-            }]);
-          
-          if (supabaseError) console.error('Supabase alert save error:', supabaseError);
-        }
+        const { error: supabaseError } = await supabase
+          .from('alerts')
+          .insert([{
+            ...formData,
+            uid: user?.uid || 'anonymous',
+            active: true,
+            created_at: new Date().toISOString()
+          }]);
+        
+        if (supabaseError) console.error('Supabase alert save error:', supabaseError.message);
       } catch (supaErr) {
         console.error('Supabase alert integration error:', supaErr);
       }

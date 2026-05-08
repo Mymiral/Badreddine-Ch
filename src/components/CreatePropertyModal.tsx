@@ -86,22 +86,19 @@ export default function CreatePropertyModal({ onClose }: CreatePropertyModalProp
 
       // Also try saving to Supabase if configured
       try {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        if (supabaseUrl) {
-          const { error: supabaseError } = await supabase
-            .from('properties')
-            .insert([{
-              ...formData,
-              price: Number(formData.price),
-              images: uploadedImageUrls,
-              image: uploadedImageUrls.length > 0 ? uploadedImageUrls[0] : '',
-              agent_id: user.uid,
-              featured: false,
-              created_at: new Date().toISOString()
-            }]);
-          
-          if (supabaseError) console.error('Supabase save error:', supabaseError);
-        }
+        const { error: supabaseError } = await supabase
+          .from('properties')
+          .insert([{
+            ...formData,
+            price: Number(formData.price),
+            images: uploadedImageUrls,
+            image: uploadedImageUrls.length > 0 ? uploadedImageUrls[0] : '',
+            agent_id: user.uid,
+            featured: false,
+            created_at: new Date().toISOString()
+          }]);
+        
+        if (supabaseError) console.error('Supabase save error:', supabaseError.message);
       } catch (supaErr) {
         console.error('Supabase integration error:', supaErr);
       }

@@ -1,14 +1,26 @@
 export interface Property {
-  id: number;
+  id: string; // Firebase IDs are string
   title: string;
   location: string;
-  price: string;
-  type: 'Vente' | 'Location';
-  beds?: number;
-  baths?: number;
+  address?: string;
+  city?: string;
+  price: number;
+  type: 'sale' | 'rent';
+  propertyType: string;
+  bedrooms: number;
+  bathrooms: number;
   area: number;
-  image: string;
+  image?: string;
+  images?: string[];
+  video?: string;
+  audio?: string;
+  description?: string;
   featured?: boolean;
+  lat?: number | null;
+  lng?: number | null;
+  agentId?: string;
+  status?: string;
+  createdAt?: any;
 }
 
 export interface Category {

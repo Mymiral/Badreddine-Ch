@@ -2,7 +2,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '@/contexts/AppContext';
-import { Property } from '@/data/properties';
+import { Property } from '@/types';
 import { useState, useEffect, useCallback } from 'react';
 import { db, handleFirestoreError, OperationType } from '@/lib/firebase';
 import { collection, onSnapshot } from 'firebase/firestore';
@@ -137,7 +137,10 @@ export default function GlobalMap() {
             {properties.map((property) => (
               <Marker 
                 key={property.id} 
-                position={[property.coordinates?.lat || 36.7, property.coordinates?.lng || 3.0]}
+                position={[
+                  property.lat ?? property.coordinates?.lat ?? 36.7, 
+                  property.lng ?? property.coordinates?.lng ?? 3.0
+                ]}
               >
                 <Popup className="property-popup">
                   <div className="w-64 p-2">
@@ -159,15 +162,15 @@ export default function GlobalMap() {
                       <div className="grid grid-cols-3 gap-1 py-2 border-y border-border">
                         <div className="flex flex-col items-center">
                           <Bed className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-[10px]">{property.beds}</span>
+                          <span className="text-[10px]">{property.bedrooms}</span>
                         </div>
                         <div className="flex flex-col items-center border-x border-border">
                           <Bath className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-[10px]">{property.baths}</span>
+                          <span className="text-[10px]">{property.bathrooms}</span>
                         </div>
                         <div className="flex flex-col items-center">
                           <Maximize className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-[10px]">{property.sqft}m²</span>
+                          <span className="text-[10px]">{property.area}m²</span>
                         </div>
                       </div>
                       <div className="flex gap-2">
@@ -179,7 +182,7 @@ export default function GlobalMap() {
                           Voir détails
                         </Button>
                         <a 
-                          href={`https://www.google.com/maps/dir/?api=1&destination=${property.coordinates?.lat || 36.7},${property.coordinates?.lng || 3.0}`}
+                          href={`https://www.google.com/maps/dir/?api=1&destination=${property.lat ?? property.coordinates?.lat ?? 36.7},${property.lng ?? property.coordinates?.lng ?? 3.0}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors"

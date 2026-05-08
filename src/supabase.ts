@@ -3,14 +3,32 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase environment variables are missing. Supabase functionality may be limited.');
+const isValidUrl = (url: string | undefined): boolean => {
+  try {
+    if (!url) return false;
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const hasValidSupabaseConfig = isValidUrl(supabaseUrl) && !!supabaseAnonKey;
+
+if (!hasValidSupabaseConfig) {
+  console.warn('Supabase environment variables are missing or invalid. Supabase functionality will be mocked.');
 }
 
-export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key'
-);
+export const supabase = hasValidSupabaseConfig
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : ({
+      from: () => ({
+        insert: async () => {
+          console.warn('Supabase is not configured. Saving to Supabase skipped.');
+          return { error: { message: 'Supabase not configured' } };
+        }
+      })
+    } as any);
 
 /**
  * SUPABASE SQL SCHEMA:
