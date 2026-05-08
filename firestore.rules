@@ -101,7 +101,7 @@ service cloud.firestore {
              data.phone is string && data.phone.size() > 0 && data.phone.size() < 20 &&
              data.active is bool &&
              data.channels is list && data.channels.size() > 0 && data.channels.size() <= 5 &&
-             data.uid == request.auth.uid &&
+             (isAuthenticated() ? (data.uid == request.auth.uid) : (data.uid == 'anonymous')) &&
              data.createdAt is timestamp;
     }
 
@@ -157,7 +157,7 @@ service cloud.firestore {
 
     match /alerts/{alertId} {
       allow read: if isDocOwner() || isAdmin();
-      allow create: if isAuthenticated() && isValidAlert(request.resource.data);
+      allow create: if isValidAlert(request.resource.data);
       allow update: if isDocOwner() && isValidAlert(request.resource.data) && 
                       request.resource.data.createdAt == resource.data.createdAt;
       allow delete: if isDocOwner() || isAdmin();

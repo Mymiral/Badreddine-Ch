@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
-import { X, Bell, CheckCircle2, LogIn } from 'lucide-react';
+import { X, Bell, CheckCircle2 } from 'lucide-react';
 import { Button } from './ui/button';
-import { db, handleFirestoreError, OperationType, loginWithGoogle } from '@/lib/firebase';
+import { db, handleFirestoreError, OperationType } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 interface AlertModalProps {
@@ -15,16 +15,7 @@ export default function AlertModal({ onClose }: AlertModalProps) {
   const { user } = useAuth();
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
 
-  const handleGoogleLogin = async () => {
-    setGoogleLoading(true);
-    try {
-      await loginWithGoogle();
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
   const [formData, setFormData] = useState({
     type: 'Villa',
     location: '',
@@ -46,14 +37,13 @@ export default function AlertModal({ onClose }: AlertModalProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
 
     setLoading(true);
     try {
       const path = 'alerts';
       await addDoc(collection(db, path), {
         ...formData,
-        uid: user.uid,
+        uid: user?.uid || 'anonymous',
         active: true,
         createdAt: serverTimestamp()
       });
@@ -73,28 +63,6 @@ export default function AlertModal({ onClose }: AlertModalProps) {
         : [...prev.channels, channel]
     }));
   };
-
-  if (!user) {
-    return (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} />
-        <div className="relative bg-card w-full max-w-md rounded-2xl shadow-2xl border border-border p-12 text-center animate-in zoom-in-95 duration-300">
-          <LogIn className="h-16 w-16 text-primary mx-auto mb-6" />
-          <h2 className="text-2xl font-display font-bold mb-4">{l.login}</h2>
-          <Button onClick={handleGoogleLogin} disabled={googleLoading} className="w-full btn-luxury py-6 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
-            {googleLoading ? (
-              <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              <>
-                <LogIn className="h-4 w-4 mr-2" />
-                Google Login
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   if (isSubmitted) {
     return (
