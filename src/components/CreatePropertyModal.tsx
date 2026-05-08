@@ -7,6 +7,7 @@ import { db, handleFirestoreError, OperationType } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '@/firebase';
+import { supabase } from '@/supabase';
 import { motion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 
@@ -26,24 +27,29 @@ export default function CreatePropertyModal({ onClose }: CreatePropertyModalProp
 
   const [formData, setFormData] = useState({
     title: '',
-    type: 'Villa',
-    price: '',
+    type: 'Villa' as 'sale' | 'rent', // This should probably be the transaction type, but 'type' in form seems to be property type
+    propertyType: 'Villa',
+    price: 0,
     location: '',
-    beds: 0,
-    baths: 0,
-    sqft: 0,
+    address: '',
+    city: '',
+    bedrooms: 0,
+    bathrooms: 0,
+    area: 0,
     description: '',
     images: [] as string[],
     video: '',
     audio: '',
     status: 'available',
-    coordinates: { lat: 36.7538, lng: 3.0588 } // Default to Algiers
+    lat: 36.7538,
+    lng: 3.0588
   });
 
   const labels = {
     fr: { title: 'Nouvelle annonce', subtitle: 'Publiez votre bien sur DarLinkDz', submit: 'Publier', cancel: 'Annuler', success: 'Annonce publiée !', addImage: 'Ajouter des images', recordAudio: 'Enregistrer un commentaire', stopAudio: 'Arrêter l\'enregistrement', videoUrl: 'URL de la vidéo (YouTube, etc.)' },
     en: { title: 'New Announcement', subtitle: 'Publish your property on DarLinkDz', submit: 'Publish', cancel: 'Cancel', success: 'Announcement published!', addImage: 'Add images', recordAudio: 'Record commentary', stopAudio: 'Stop recording', videoUrl: 'Video URL (YouTube, etc.)' },
-    ar: { title: 'إعلان جديد', subtitle: 'انشر عقارك على DarLinkDz', submit: 'نشر', cancel: 'إلغاء', success: 'تم نشر الإعلان!', addImage: 'إضافة صور', recordAudio: 'تسجيل تعليق', stopAudio: 'إيقاف التسجيل', videoUrl: 'رابط الفيديو (يوتيوب، إلخ)' }
+    ar: { title: 'إعلان جديد', subtitle: 'انشر عقارك على DarLinkDz', submit: 'نشر', cancel: 'إلغاء', success: 'تم نشر الإعلان!', addImage: 'إضافة صور', recordAudio: 'تسجيل تعليق', stopAudio: 'إيقاف التسجيل', videoUrl: 'رابط الفيديو (يوتيوب، إلخ)' },
+    tzm: { title: 'Isalan imaynuten', subtitle: 'Ssekfel ayla-nk di DarLinkDz', submit: 'Ssekfel', cancel: 'Semmet', success: 'Ayla i-ssekfel!', addImage: 'Rnu tiwlafin', recordAudio: 'Ssekles ameslay', stopAudio: 'Hbes assekles', videoUrl: 'Tamselyat n uvidyu (YouTube, atg.)' }
   };
 
   const l = labels[language as keyof typeof labels] || labels.en;
@@ -69,12 +75,37 @@ export default function CreatePropertyModal({ onClose }: CreatePropertyModalProp
       
       await addDoc(collection(db, path), {
         ...formData,
+        price: Number(formData.price),
         images: uploadedImageUrls,
         image: uploadedImageUrls.length > 0 ? uploadedImageUrls[0] : '', // Fallback for older components
-        uid: user.uid,
+        agentId: user.uid,
+        agentName: user.displayName || user.email?.split('@')[0] || 'Agent',
         featured: false,
         createdAt: serverTimestamp()
       });
+
+      // Also try saving to Supabase if configured
+      try {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        if (supabaseUrl) {
+          const { error: supabaseError } = await supabase
+            .from('properties')
+            .insert([{
+              ...formData,
+              price: Number(formData.price),
+              images: uploadedImageUrls,
+              image: uploadedImageUrls.length > 0 ? uploadedImageUrls[0] : '',
+              agent_id: user.uid,
+              featured: false,
+              created_at: new Date().toISOString()
+            }]);
+          
+          if (supabaseError) console.error('Supabase save error:', supabaseError);
+        }
+      } catch (supaErr) {
+        console.error('Supabase integration error:', supaErr);
+      }
+
       onClose();
       window.dispatchEvent(new CustomEvent('property-created'));
     } catch (error) {
@@ -229,8 +260,8 @@ export default function CreatePropertyModal({ onClose }: CreatePropertyModalProp
             <div className="space-y-2">
               <label className="text-sm font-medium text-white/90">{t('property_type')}</label>
               <select 
-                value={formData.type}
-                onChange={(e) => setFormData({...formData, type: e.target.value})}
+                value={formData.propertyType}
+                onChange={(e) => setFormData({...formData, propertyType: e.target.value})}
                 className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-primary transition-colors appearance-none"
               >
                 <option className="bg-[#0a1229]" value="Villa">{t('villa')}</option>
@@ -244,18 +275,32 @@ export default function CreatePropertyModal({ onClose }: CreatePropertyModalProp
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
+              <label className="text-sm font-medium text-white/90">Transaction</label>
+              <select 
+                value={formData.type}
+                onChange={(e) => setFormData({...formData, type: e.target.value as 'sale' | 'rent'})}
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-primary transition-colors appearance-none"
+              >
+                <option className="bg-[#0a1229]" value="sale">{t('properties.sale')}</option>
+                <option className="bg-[#0a1229]" value="rent">{t('properties.rent')}</option>
+              </select>
+            </div>
+            <div className="space-y-2">
               <label className="text-sm font-medium flex items-center text-white/90">
-                <DollarSign className="h-4 w-4 mr-1 text-primary" /> {t('price')}
+                <DollarSign className="h-4 w-4 mr-1 text-primary" /> {t('price')} (DZD)
               </label>
               <input 
-                type="text" 
+                type="number" 
                 required
                 placeholder={t('price_placeholder')} 
                 value={formData.price}
-                onChange={(e) => setFormData({...formData, price: e.target.value})}
+                onChange={(e) => setFormData({...formData, price: Number(e.target.value)})}
                 className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-primary transition-colors" 
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-medium flex items-center text-white/90">
                 <MapPin className="h-4 w-4 mr-1 text-primary" /> {t('publish.location')}
@@ -269,6 +314,16 @@ export default function CreatePropertyModal({ onClose }: CreatePropertyModalProp
                 className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-primary transition-colors" 
               />
             </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-white/90">Ville / Commune</label>
+              <input 
+                type="text" 
+                placeholder="Ex: Alger, Oran..." 
+                value={formData.city}
+                onChange={(e) => setFormData({...formData, city: e.target.value})}
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-primary transition-colors" 
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-3 gap-4">
@@ -279,8 +334,8 @@ export default function CreatePropertyModal({ onClose }: CreatePropertyModalProp
               <input 
                 type="number" 
                 required
-                value={formData.beds}
-                onChange={(e) => setFormData({...formData, beds: parseInt(e.target.value)})}
+                value={formData.bedrooms}
+                onChange={(e) => setFormData({...formData, bedrooms: parseInt(e.target.value)})}
                 className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-primary transition-colors" 
               />
             </div>
@@ -291,8 +346,8 @@ export default function CreatePropertyModal({ onClose }: CreatePropertyModalProp
               <input 
                 type="number" 
                 required
-                value={formData.baths}
-                onChange={(e) => setFormData({...formData, baths: parseInt(e.target.value)})}
+                value={formData.bathrooms}
+                onChange={(e) => setFormData({...formData, bathrooms: parseInt(e.target.value)})}
                 className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-primary transition-colors" 
               />
             </div>
@@ -303,8 +358,8 @@ export default function CreatePropertyModal({ onClose }: CreatePropertyModalProp
               <input 
                 type="number" 
                 required
-                value={formData.sqft}
-                onChange={(e) => setFormData({...formData, sqft: parseInt(e.target.value)})}
+                value={formData.area}
+                onChange={(e) => setFormData({...formData, area: parseInt(e.target.value)})}
                 className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-primary transition-colors" 
               />
             </div>

@@ -8,15 +8,21 @@ interface Property {
   description: string;
   price: number;
   location: string;
+  address?: string;
+  city?: string;
   type: 'sale' | 'rent';
   propertyType: string;
   bedrooms: number;
   bathrooms: number;
   area: number;
   images: string[];
+  video?: string;
+  audio?: string;
   featured: boolean;
   createdAt: any;
   agentId: string;
+  lat?: number | null;
+  lng?: number | null;
 }
 
 interface PropertyContextType {

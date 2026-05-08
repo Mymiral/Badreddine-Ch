@@ -20,9 +20,26 @@ const PropertyDetail = () => {
   const [property, setProperty] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [agent, setAgent] = useState<any>(null);
   const [activeImage, setActiveImage] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
   const [showVisitModal, setShowVisitModal] = useState(false);
+  
+  useEffect(() => {
+    const fetchAgent = async () => {
+      if (!property?.agentId) return;
+      try {
+        const agentRef = doc(db, 'users', property.agentId);
+        const agentSnap = await getDoc(agentRef);
+        if (agentSnap.exists()) {
+          setAgent({ id: agentSnap.id, ...agentSnap.data() });
+        }
+      } catch (err) {
+        console.error('Error fetching agent:', err);
+      }
+    };
+    if (property) fetchAgent();
+  }, [property]);
 
   const handleShare = async () => {
     try {
@@ -321,24 +338,26 @@ const PropertyDetail = () => {
               
               <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border">
                 <img
-                  src="https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80"
+                  src={agent?.photoURL || "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80"}
                   alt="Agent"
                   className="w-16 h-16 rounded-full object-cover"
                 />
                 <div>
-                  <h4 className="font-bold text-lg">Amine Benali</h4>
-                  <p className="text-muted-foreground text-sm">Agent Immobilier Senior</p>
+                  <h4 className="font-bold text-lg">{agent?.displayName || agent?.name || 'Agent DarLink'}</h4>
+                  <p className="text-muted-foreground text-sm">{agent?.role || 'Conseiller Immobilier'}</p>
                 </div>
               </div>
 
               <div className="space-y-4 mb-8">
-                <a href="tel:+213555123456" className="flex items-center gap-3 text-muted-foreground hover:text-brand-accent transition-colors">
-                  <Phone className="w-5 h-5" />
-                  <span>+213 (0) 555 123 456</span>
-                </a>
-                <a href="mailto:amine@darlinkdz.com" className="flex items-center gap-3 text-muted-foreground hover:text-brand-accent transition-colors">
+                {agent?.phone && (
+                  <a href={`tel:${agent.phone}`} className="flex items-center gap-3 text-muted-foreground hover:text-brand-accent transition-colors">
+                    <Phone className="w-5 h-5" />
+                    <span>{agent.phone}</span>
+                  </a>
+                )}
+                <a href={`mailto:${agent?.email || 'contact@darlinkdz.com'}`} className="flex items-center gap-3 text-muted-foreground hover:text-brand-accent transition-colors">
                   <Mail className="w-5 h-5" />
-                  <span>amine@darlinkdz.com</span>
+                  <span>{agent?.email || 'contact@darlinkdz.com'}</span>
                 </a>
               </div>
 

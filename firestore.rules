@@ -71,7 +71,10 @@ service cloud.firestore {
     }
 
     function isDocOwner() {
-      return isAuthenticated() && request.auth.uid == resource.data.uid;
+      return isAuthenticated() && (
+        (resource.data.uid == request.auth.uid) ||
+        (resource.data.agentId == request.auth.uid)
+      );
     }
 
     function isValidEmail(email) {
@@ -84,7 +87,7 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthenticated() &&
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
           (request.auth.token.email == "barahdid99@gmail.com" && request.auth.token.email_verified == true));
     }
 
@@ -93,54 +96,57 @@ service cloud.firestore {
     // ===============================================================
 
     function isValidAlert(data) {
-      return hasOnlyAllowedFields(['type', 'location', 'budget', 'email', 'phone', 'active', 'channels', 'uid', 'createdAt']) &&
-             data.type is string && data.type.size() > 0 && data.type.size() < 100 &&
-             data.location is string && data.location.size() > 0 && data.location.size() < 100 &&
-             data.budget is string && data.budget.size() > 0 && data.budget.size() < 100 &&
+      return data.keys().hasAll(['type', 'location', 'budget', 'phone', 'active', 'channels', 'uid', 'createdAt']) &&
+             data.type is string && 
+             data.location is string && 
+             data.budget is string && 
              (!('email' in data) || isValidEmail(data.email)) &&
-             data.phone is string && data.phone.size() > 0 && data.phone.size() < 20 &&
+             data.phone is string && 
              data.active is bool &&
-             data.channels is list && data.channels.size() > 0 && data.channels.size() <= 5 &&
+             data.channels is list && 
              (isAuthenticated() ? (data.uid == request.auth.uid) : (data.uid == 'anonymous')) &&
              data.createdAt is timestamp;
     }
 
     function isValidComment(data) {
-      return hasOnlyAllowedFields(['propertyId', 'authorName', 'text', 'uid', 'createdAt']) &&
-             data.propertyId is string && data.propertyId.size() > 0 &&
-             data.authorName is string && data.authorName.size() > 0 && data.authorName.size() < 100 &&
-             data.text is string && data.text.size() > 0 && data.text.size() < 1000 &&
+      return data.keys().hasAll(['propertyId', 'authorName', 'text', 'uid', 'createdAt']) &&
+             data.propertyId is string && 
+             data.authorName is string && 
+             data.text is string && 
              data.uid == request.auth.uid &&
              data.createdAt is timestamp;
     }
 
     function isValidRating(data) {
-      return hasOnlyAllowedFields(['propertyId', 'authorName', 'score', 'uid', 'createdAt']) &&
-             data.propertyId is string && data.propertyId.size() > 0 &&
-             data.authorName is string && data.authorName.size() > 0 && data.authorName.size() < 100 &&
-             data.score is int && data.score >= 1 && data.score <= 5 &&
+      return data.keys().hasAll(['propertyId', 'authorName', 'score', 'uid', 'createdAt']) &&
+             data.propertyId is string && 
+             data.authorName is string && 
+             data.score is int && 
              data.uid == request.auth.uid &&
              data.createdAt is timestamp;
     }
 
     function isValidProperty(data) {
-      return hasOnlyAllowedFields(['title', 'type', 'price', 'location', 'beds', 'baths', 'sqft', 'image', 'images', 'video', 'description', 'featured', 'status', 'coordinates', 'uid', 'createdAt']) &&
-             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
-             data.type is string && data.type.size() > 0 &&
-             data.price is string && data.price.size() > 0 &&
-             data.location is string && data.location.size() > 0 &&
-             data.beds is int && data.beds >= 0 &&
-             data.baths is int && data.baths >= 0 &&
-             data.sqft is int && data.sqft >= 0 &&
-             (!('image' in data) || data.image is string) &&
+      return data.keys().hasAll(['title', 'type', 'propertyType', 'price', 'location', 'bedrooms', 'bathrooms', 'area', 'agentId', 'createdAt']) &&
+             data.title is string && data.title.size() > 0 &&
+             data.type in ['sale', 'rent'] &&
+             data.propertyType is string &&
+             data.price is number &&
+             data.location is string &&
+             data.bedrooms is number &&
+             data.bathrooms is number &&
+             data.area is number &&
              (!('images' in data) || data.images is list) &&
              (!('video' in data) || data.video is string) &&
+             (!('audio' in data) || data.audio is string) &&
              (!('description' in data) || data.description is string) &&
+             (!('address' in data) || data.address is string) &&
+             (!('city' in data) || data.city is string) &&
              (!('featured' in data) || data.featured is bool) &&
-             (!('status' in data) || data.status in ['available', 'sold']) &&
-             (!('coordinates' in data) || (data.coordinates is map && data.coordinates.lat is number && data.coordinates.lng is number)) &&
-             data.uid == request.auth.uid &&
-              data.createdAt is timestamp;
+             (!('lat' in data) || (data.lat == null || data.lat is number)) &&
+             (!('lng' in data) || (data.lng == null || data.lng is number)) &&
+             data.agentId == request.auth.uid &&
+             data.createdAt is timestamp;
     }
 
     // ===============================================================

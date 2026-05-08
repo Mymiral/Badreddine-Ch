@@ -142,10 +142,10 @@ const PropertyCard = ({ property, highlighted }: PropertyCardProps) => {
           </Link>
         </h3>
 
-        {property.agent && (
+        {(property.agent || (property as any).agentName) && (
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-4">
-            <span className="font-medium">{property.agent.name}</span>
-            {property.agent.verified && (
+            <span className="font-medium">{property.agent?.name || (property as any).agentName}</span>
+            {property.agent?.verified && (
               <BadgeCheck className="w-4 h-4 text-brand-accent" title="Agent Vérifié" />
             )}
           </div>

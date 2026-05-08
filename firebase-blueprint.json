@@ -49,28 +49,26 @@
       "type": "object",
       "properties": {
         "title": { "type": "string" },
-        "type": { "type": "string" },
-        "price": { "type": "string" },
+        "type": { "type": "string", "enum": ["sale", "rent"] },
+        "propertyType": { "type": "string" },
+        "price": { "type": "number" },
         "location": { "type": "string" },
-        "beds": { "type": "integer" },
-        "baths": { "type": "integer" },
-        "sqft": { "type": "integer" },
-        "image": { "type": "string" },
+        "address": { "type": "string" },
+        "city": { "type": "string" },
+        "bedrooms": { "type": "integer" },
+        "bathrooms": { "type": "integer" },
+        "area": { "type": "number" },
         "images": { "type": "array", "items": { "type": "string" } },
         "video": { "type": "string" },
+        "audio": { "type": "string" },
         "description": { "type": "string" },
         "featured": { "type": "boolean" },
-        "coordinates": { 
-          "type": "object",
-          "properties": {
-            "lat": { "type": "number" },
-            "lng": { "type": "number" }
-          }
-        },
-        "uid": { "type": "string" },
+        "lat": { "type": "number" },
+        "lng": { "type": "number" },
+        "agentId": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["title", "type", "price", "location", "beds", "baths", "sqft", "uid", "createdAt"]
+      "required": ["title", "type", "propertyType", "price", "location", "bedrooms", "bathrooms", "area", "agentId", "createdAt"]
     }
   },
   "firestore": {
