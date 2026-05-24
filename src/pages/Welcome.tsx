@@ -3,14 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { Lock, User } from 'lucide-react';
+import Logo from '@/components/Logo';
 
 const Welcome = () => {
   const { i18n } = useTranslation();
   const navigate = useNavigate();
   const [isExiting, setIsExiting] = useState(false);
-  const [logoError, setLogoError] = useState(false);
   const [selectedLang, setSelectedLang] = useState<string | null>(null);
-  const siteLogo = localStorage.getItem('siteLogo') || '/logo.jpg';
 
   useEffect(() => {
     // If user already visited, redirect to home
@@ -123,20 +122,7 @@ const Welcome = () => {
               className="text-center mb-12"
             >
               <div className="flex items-center justify-center mb-6 animate-[float_3s_ease-in-out_infinite]">
-                {!logoError ? (
-                  <img 
-                    src={siteLogo} 
-                    alt="DarLinkDZ Logo" 
-                    className="w-[280px] md:w-[380px] object-contain"
-                    onError={() => setLogoError(true)}
-                  />
-                ) : (
-                  <div className="font-display font-bold text-5xl md:text-7xl tracking-tight flex items-center">
-                    <span className="text-white">Dar</span>
-                    <span style={{ color: '#00F5C4' }}>Link</span>
-                    <span style={{ color: '#7B2FBE' }}>DZ</span>
-                  </div>
-                )}
+                <Logo className="w-[280px] md:w-[380px]" />
               </div>
               <p className="text-xl text-gray-300 font-medium">
                 {getTagline()}

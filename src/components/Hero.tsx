@@ -2,6 +2,7 @@ import { useApp } from '@/contexts/AppContext';
 import { Button } from './ui/button';
 import { motion } from 'motion/react';
 import { Phone } from 'lucide-react';
+import Logo from '@/components/Logo';
 
 export default function Hero() {
   const { language } = useApp();
@@ -44,13 +45,8 @@ export default function Hero() {
           transition={{ duration: 0.8 }}
           className="mb-12"
         >
-          <div className="w-48 h-48 mx-auto bg-primary/5 rounded-3xl flex items-center justify-center p-4 border border-white/5 shadow-2xl">
-            <img 
-              src="https://ais-dev-f22x2puxhyvw5bsqxvp2eh-353101161195.europe-west2.run.app/logo.png" 
-              alt="DarLinkDZ Logo" 
-              className="w-full h-full object-contain"
-              onError={(e) => (e.currentTarget.src = 'https://picsum.photos/seed/darlink/200/200')}
-            />
+          <div className="w-64 h-48 mx-auto flex items-center justify-center p-4">
+            <Logo className="w-full h-full" />
           </div>
         </motion.div>
 

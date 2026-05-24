@@ -2,26 +2,15 @@ import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
-import { Upload, Mic, MapPin, Home, DollarSign, CheckCircle2, X, Video, StopCircle } from 'lucide-react';
+import { Upload, Mic, MapPin, Home, DollarSign, CheckCircle2, X, StopCircle, Video } from 'lucide-react';
 import { collection, addDoc, serverTimestamp, getDocs, query, where } from 'firebase/firestore';
-import { ref, uploadBytesResumable, getDownloadURL, UploadTask } from 'firebase/storage';
-import { db, storage } from '@/firebase';
+import { db } from '@/firebase';
 import { useAuth } from '@/context/AuthContext';
 import LocationSelector from '@/components/LocationSelector';
 import BackButton from '@/components/BackButton';
 import { MapPicker } from '@/components/MapPicker';
-
-interface UploadItem {
-  id: string;
-  file: File;
-  progress: number;
-  speed: number;
-  status: 'uploading' | 'success' | 'error';
-  url?: string;
-  retryCount: number;
-  task?: UploadTask;
-  type: 'image' | 'video';
-}
+import UploadZone, { UploadedFile } from '@/components/UploadZone';
+import { supabase } from '@/supabase';
 
 const PublishProperty = () => {
   const { t } = useTranslation();
@@ -49,8 +38,7 @@ const PublishProperty = () => {
     features: [] as string[],
   });
 
-  const [uploads, setUploads] = useState<UploadItem[]>([]);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploads, setUploads] = useState<UploadedFile[]>([]);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -66,119 +54,6 @@ const PublishProperty = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB per chunk
-
-  const uploadInChunks = async (file: File, type: 'image' | 'video'): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const id = Math.random().toString(36).substring(7);
-      const fileRef = ref(storage, `uploads/${Date.now()}_${file.name}`);
-      
-      let retryCount = 0;
-      
-      const doUpload = () => {
-        const uploadTask = uploadBytesResumable(fileRef, file);
-        
-        setUploads(prev => {
-          const existing = prev.find(u => u.id === id);
-          if (existing) {
-            return prev.map(u => u.id === id ? { ...u, status: 'uploading', retryCount, task: uploadTask } : u);
-          }
-          return [...prev, { id, file, progress: 0, speed: 0, status: 'uploading', retryCount, task: uploadTask, type }];
-        });
-
-        let lastBytesTransferred = 0;
-        let lastTime = Date.now();
-
-        uploadTask.on('state_changed', 
-          (snapshot) => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            const now = Date.now();
-            const timeDiff = (now - lastTime) / 1000;
-            let speed = 0;
-            if (timeDiff > 0.5) {
-              speed = ((snapshot.bytesTransferred - lastBytesTransferred) / 1024) / timeDiff;
-              lastBytesTransferred = snapshot.bytesTransferred;
-              lastTime = now;
-            }
-
-            setUploads(prev => prev.map(u => u.id === id ? { ...u, progress, speed: speed > 0 ? speed : u.speed } : u));
-          },
-          (error) => {
-            if (retryCount < 5) {
-              retryCount++;
-              setUploads(prev => prev.map(u => u.id === id ? { ...u, status: 'error', retryCount } : u));
-              setTimeout(() => {
-                doUpload();
-              }, 3000);
-            } else {
-              setUploads(prev => prev.map(u => u.id === id ? { ...u, status: 'error' } : u));
-              reject(error);
-            }
-          },
-          async () => {
-            const url = await getDownloadURL(uploadTask.snapshot.ref);
-            setUploads(prev => prev.map(u => u.id === id ? { ...u, progress: 100, status: 'success', url } : u));
-            resolve(url);
-          }
-        );
-      };
-      
-      doUpload();
-    });
-  };
-
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const selectedFiles = Array.from(e.target.files) as File[];
-      const validFiles: File[] = [];
-      
-      setUploadError(null);
-      
-      for (const file of selectedFiles) {
-        if (file.size > 15 * 1024 * 1024) {
-          setUploadError(`Fichier trop lourd — max 15MB pour les photos: ${file.name}`);
-        } else {
-          validFiles.push(file);
-        }
-      }
-
-      await Promise.all(validFiles.map(file => uploadInChunks(file, 'image')));
-    }
-  };
-
-  const removeImage = (index: number) => {
-    setUploads(prev => {
-      const imageUploads = prev.filter(u => u.type === 'image');
-      const targetUpload = imageUploads[index];
-      if (targetUpload && targetUpload.task) {
-        targetUpload.task.cancel();
-      }
-      return prev.filter(u => u.id !== targetUpload?.id);
-    });
-  };
-
-  const handleVideoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setUploadError(null);
-      if (file.size > 500 * 1024 * 1024) {
-        setUploadError('Fichier trop lourd — max 500MB pour les vidéos');
-        return;
-      }
-      await uploadInChunks(file, 'video');
-    }
-  };
-
-  const removeVideo = () => {
-    setUploads(prev => {
-      const videoUploads = prev.filter(u => u.type === 'video');
-      videoUploads.forEach(u => {
-        if (u.task) u.task.cancel();
-      });
-      return prev.filter(u => u.type !== 'video');
-    });
   };
 
   const startRecording = async () => {
@@ -233,26 +108,69 @@ const PublishProperty = () => {
       return;
     }
 
+    if (uploads.length > 0 && !uploads.every(u => u.status === 'success')) {
+      setError('Please wait for all uploads to finish before submitting.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      let uploadedImageUrls: string[] = [];
-      let uploadedVideoUrl: string = formData.video;
+      // 1. Collect URLs (images vs video)
+      const mediaUrls: string[] = [];
+      let videoUrl: string | null = null;
+      
+      uploads.forEach(u => {
+        if (u.url) {
+          if (u.file.type.startsWith('video/')) {
+            videoUrl = u.url;
+          } else if (u.file.type.startsWith('image/')) {
+            mediaUrls.push(u.url);
+          } else {
+             // Let's just consider all other formats as mediaUrls too.
+            mediaUrls.push(u.url);
+          }
+        }
+      });
+      
+      // 2. Save Announcement to Supabase (User prompt 5)
+      const { data: supaData, error: supaError } = await supabase
+        .from('announcements')
+        .insert([{
+          title: formData.title,
+          description: formData.description,
+          type: formData.type === 'sale' ? 'vente' : 'location', // mapped based on pg check
+          property_type: formData.propertyType,
+          price: Number(formData.price),
+          surface: Number(formData.area),
+          rooms: Number(formData.bedrooms),
+          bathrooms: Number(formData.bathrooms),
+          wilaya: formData.city,
+          commune: formData.location,
+          lat: mapPosition?.lat || null,
+          lng: mapPosition?.lng || null,
+          media_urls: mediaUrls,
+          video_url: videoUrl,
+          is_published: true
+        }]);
+      
+      if (supaError) {
+        console.error("Supabase Save Error:", supaError);
+        // Show exact error as requested
+        throw new Error(supaError.message || JSON.stringify(supaError));
+      }
 
-      uploadedImageUrls = uploads.filter(u => u.type === 'image' && u.status === 'success' && u.url).map(u => u.url!);
-      const videoUpload = uploads.find(u => u.type === 'video' && u.status === 'success' && u.url);
-      if (videoUpload) uploadedVideoUrl = videoUpload.url!;
-
+      // Also still write to Firebase just in case to not break other dashboard logic if they exist
       const propertyData = {
         ...formData,
         price: Number(formData.price),
         bedrooms: Number(formData.bedrooms),
         bathrooms: Number(formData.bathrooms),
         area: Number(formData.area),
-        video: uploadedVideoUrl,
+        video: videoUrl,
         audio: formData.audio,
-        images: uploadedImageUrls,
+        images: mediaUrls,
         agentId: user.uid,
         agentName: user.displayName || user.email?.split('@')[0] || 'Agent',
         featured: false,
@@ -260,58 +178,19 @@ const PublishProperty = () => {
         lat: mapPosition?.lat || null,
         lng: mapPosition?.lng || null,
       };
-
       await addDoc(collection(db, 'properties'), propertyData);
 
-      // Also try saving to Supabase if configured
-      try {
-        // Dynamic import of supabase client to avoid issues if not configured globally
-        const { supabase } = await import('@/supabase');
-        const { error: supabaseError } = await supabase
-          .from('properties')
-          .insert([{
-            title: propertyData.title,
-            type: propertyData.type,
-            property_type: propertyData.propertyType,
-            price: propertyData.price,
-            location: propertyData.location,
-            address: propertyData.address,
-            city: propertyData.city,
-            bedrooms: propertyData.bedrooms,
-            bathrooms: propertyData.bathrooms,
-            area: propertyData.area,
-            images: propertyData.images,
-            video: propertyData.video,
-            audio: propertyData.audio,
-            description: propertyData.description,
-            featured: propertyData.featured,
-            lat: propertyData.lat,
-            lng: propertyData.lng,
-            agent_id: propertyData.agentId,
-            status: 'available',
-            created_at: new Date().toISOString()
-          }]);
-        
-        if (supabaseError) console.error('Supabase save error:', supabaseError.message);
-      } catch (supaErr) {
-        console.error('Supabase integration error:', supaErr);
-      }
-      
       // Smart Alert Matching Logic
       try {
         const alertsSnapshot = await getDocs(query(collection(db, 'alerts'), where('is_active', '==', true)));
-        
         alertsSnapshot.forEach(async (alertDoc) => {
           const alert = alertDoc.data();
-          
-          // Check matching criteria
           const matchType = alert.propertyType === 'Tous' || alert.propertyType.toLowerCase() === propertyData.propertyType.toLowerCase();
           const matchTransaction = alert.transaction === 'Tous' || alert.transaction.toLowerCase() === (propertyData.type === 'sale' ? 'vente' : 'location');
           const matchWilaya = alert.wilaya === 'Tous' || alert.wilaya === propertyData.city;
           const matchBudget = !alert.budget || propertyData.price <= alert.budget;
           
           if (matchType && matchTransaction && matchWilaya && matchBudget) {
-            // Create notification
             await addDoc(collection(db, 'notifications'), {
               alertId: alertDoc.id,
               phone: alert.phone,
@@ -329,9 +208,9 @@ const PublishProperty = () => {
       setTimeout(() => {
         navigate('/my-listings');
       }, 2000);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error publishing property:', err);
-      setError('Failed to publish property. Please try again.');
+      setError(`Database Error: ${err.message || 'Failed to publish property.'}`);
     } finally {
       setLoading(false);
     }
@@ -371,12 +250,6 @@ const PublishProperty = () => {
         {error && (
           <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-lg mb-8 border border-red-200 dark:border-red-900/50">
             {error}
-          </div>
-        )}
-
-        {uploadError && (
-          <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-lg mb-8 border border-red-200 dark:border-red-900/50">
-            {uploadError}
           </div>
         )}
 
@@ -586,125 +459,22 @@ const PublishProperty = () => {
               <Upload className="w-6 h-6 text-brand-accent" />
               {t('publish.media')}
             </h2>
-            
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">{t('publish.images')} *</label>
-                <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:bg-muted/50 transition-colors cursor-pointer relative">
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  />
-                  <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {t('publish.dragImages', 'Glissez-déposez vos images ici ou cliquez pour parcourir')}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {t('publish.imageFormats', 'JPG, PNG, WEBP (Max 5MB par image)')}
-                  </p>
-                </div>
-              </div>
-
-              {/* Image Previews */}
-              {uploads.filter(u => u.type === 'image').length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  {uploads.filter(u => u.type === 'image').map((u, index) => (
-                    <div key={u.id} className="relative aspect-square rounded-lg overflow-hidden border border-border group">
-                      <img src={u.url || URL.createObjectURL(u.file)} alt={`Preview ${index}`} className="w-full h-full object-cover opacity-50" />
-                      {u.status === 'success' && <div className="absolute inset-0 bg-black/20 flex items-center justify-center"><CheckCircle2 className="w-8 h-8 text-green-500" /></div>}
-                      <button
-                        type="button"
-                        onClick={() => removeImage(index)}
-                        className="absolute top-2 right-2 p-1.5 bg-black/50 hover:bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+                        <div className="space-y-6">
+              <UploadZone files={uploads} setFiles={setUploads} />
 
               <div className="space-y-2 pt-6 border-t border-border">
-                <label className="text-sm font-medium flex items-center">
-                  <Video className="w-4 h-4 mr-2 text-brand-accent" /> {t('publish.addVideo', 'Ajouter une vidéo (Max 100MB)')}
+                <label className="text-sm font-medium flex items-center mb-2">
+                  <Video className="w-4 h-4 mr-2 text-brand-accent" /> {t('publish.videoUrl', 'Lien Vidéo (YouTube, etc.)')}
                 </label>
-                
-                {uploads.filter(u => u.type === 'video').length === 0 ? (
-                  <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:bg-muted/50 transition-colors cursor-pointer relative">
-                    <input
-                      type="file"
-                      accept="video/mp4,video/quicktime,video/x-msvideo"
-                      onChange={handleVideoChange}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    />
-                    <Video className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-sm text-muted-foreground mb-2">
-                      {t('publish.dragVideo', 'Cliquez ou glissez une vidéo ici')}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {t('publish.videoFormats', 'MP4, MOV, AVI (Max 100MB)')}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="relative rounded-xl overflow-hidden border border-border bg-black aspect-video">
-                    <video src={uploads.find(u => u.type === 'video')?.url || URL.createObjectURL(uploads.find(u => u.type === 'video')!.file)} controls className="w-full h-full object-contain opacity-50" />
-                    {uploads.find(u => u.type === 'video')?.status === 'success' && <div className="absolute inset-0 bg-black/20 flex items-center justify-center pointer-events-none"><CheckCircle2 className="w-12 h-12 text-green-500" /></div>}
-                    <button
-                      type="button"
-                      onClick={removeVideo}
-                      className="absolute top-2 right-2 p-2 bg-black/50 hover:bg-red-500 text-white rounded-full transition-all"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                )}
-                
-                <div className="mt-4">
-                  <label className="text-sm font-medium flex items-center mb-2">
-                    {t('publish.videoUrl', 'Ou URL de la vidéo (YouTube, etc.)')}
-                  </label>
-                  <input 
-                    type="url" 
-                    name="video"
-                    placeholder={t('video_url_placeholder')} 
-                    value={formData.video}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:ring-2 focus:ring-brand-accent transition-all" 
-                  />
-                </div>
+                <input 
+                  type="url" 
+                  name="video"
+                  placeholder={t('video_url_placeholder', 'https://youtube.com/...')} 
+                  value={formData.video}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:ring-2 focus:ring-brand-accent transition-all" 
+                />
               </div>
-
-              {/* Upload Progress */}
-              {uploads.length > 0 && (
-                <div className="space-y-3 mt-4">
-                  {uploads.map(u => (
-                    <div key={u.id} className="flex items-center gap-4 bg-muted/30 p-3 rounded-lg border border-border">
-                      <div className="flex-1">
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="font-medium truncate max-w-[200px]">{u.file.name}</span>
-                          <span className="text-muted-foreground">
-                            {u.status === 'error' && u.retryCount < 5 
-                              ? `Connexion lente — nouvelle tentative (${u.retryCount}/5)...` 
-                              : u.status === 'error' 
-                                ? 'Échec' 
-                                : `${Math.round(u.progress)}% - ${Math.round(u.speed)} KB/s`}
-                          </span>
-                        </div>
-                        <div className="h-2 bg-muted rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full transition-all duration-300 ${u.status === 'error' ? 'bg-red-500' : u.status === 'success' ? 'bg-green-500' : 'bg-brand-accent'}`}
-                            style={{ width: `${u.progress}%` }}
-                          />
-                        </div>
-                      </div>
-                      {u.status === 'success' && <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />}
-                    </div>
-                  ))}
-                </div>
-              )}
 
               {/* Audio */}
               <div className="space-y-2 pt-6 border-t border-border">

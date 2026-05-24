@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { auth, db } from '@/firebase';
 import { 
-  onAuthStateChanged, 
+  onIdTokenChanged, 
   User as FirebaseUser,
   signOut as firebaseSignOut
 } from 'firebase/auth';
@@ -29,7 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+    const unsubscribe = onIdTokenChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
         try {
           // Fetch additional user data from Firestore

@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
-import { Mail, Lock, User, Phone, ArrowRight, Home } from 'lucide-react';
+import { Mail, Lock, User, Phone, ArrowRight } from 'lucide-react';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/firebase';
+import Logo from '@/components/Logo';
 
 const Register = () => {
   const { t } = useTranslation();
@@ -76,8 +77,8 @@ const Register = () => {
         className="max-w-md w-full space-y-8 bg-card border border-border p-8 rounded-2xl shadow-xl relative z-10"
       >
         <div className="text-center">
-          <Link to="/" className="inline-flex items-center justify-center w-12 h-12 bg-brand-accent rounded-xl mb-4">
-            <Home className="w-6 h-6 text-brand-primary" />
+          <Link to="/" className="inline-flex items-center justify-center mb-6">
+            <Logo className="h-[60px] md:h-[80px]" />
           </Link>
           <h2 className="text-3xl font-display font-bold text-foreground">
             {t('auth.createAccount')}

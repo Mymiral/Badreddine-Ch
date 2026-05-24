@@ -2,11 +2,10 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Facebook, Instagram, Twitter, Linkedin, Mail, Phone, MapPin } from 'lucide-react';
+import Logo from '@/components/Logo';
 
 const Footer = () => {
   const { t } = useTranslation();
-  const [logoError, setLogoError] = useState(false);
-  const siteLogo = localStorage.getItem('siteLogo') || '/logo.jpg';
 
   return (
     <footer className="bg-brand-black text-white pt-20 pb-10">
@@ -15,20 +14,7 @@ const Footer = () => {
           {/* Brand & Info */}
           <div className="space-y-6">
             <Link to="/" className="flex items-center">
-              {!logoError ? (
-                <img 
-                  src={siteLogo} 
-                  alt="DarLinkDZ Logo" 
-                  className="h-[40px] w-auto object-contain"
-                  onError={() => setLogoError(true)}
-                />
-              ) : (
-                <div className="font-display font-bold text-2xl tracking-tight flex items-center">
-                  <span className="text-white">Dar</span>
-                  <span style={{ color: '#00F5C4' }}>Link</span>
-                  <span style={{ color: '#7B2FBE' }}>DZ</span>
-                </div>
-              )}
+              <Logo className="h-[40px] w-auto" />
             </Link>
             <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
               {t('footer.tagline')}

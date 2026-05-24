@@ -6,6 +6,7 @@ import { loginWithGoogle, logout } from '@/lib/firebase';
 import { useTranslation } from 'react-i18next';
 import CreatePropertyModal from './CreatePropertyModal';
 import { motion, AnimatePresence } from 'motion/react';
+import Logo from '@/components/Logo';
 
 export default function Header() {
   const { language, setLanguage, currency, setCurrency } = useApp();
@@ -86,13 +87,7 @@ export default function Header() {
           className="flex items-center gap-2 cursor-pointer" 
           onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'home' }))}
         >
-          <div className="w-8 h-8 bg-primary/20 rounded flex items-center justify-center overflow-hidden">
-            <img src="https://ais-dev-f22x2puxhyvw5bsqxvp2eh-353101161195.europe-west2.run.app/logo.png" alt="Logo" className="w-full h-full object-contain" onError={(e) => (e.currentTarget.src = 'https://picsum.photos/seed/darlink/32/32')} />
-          </div>
-          <div className="text-xl font-display font-bold tracking-tight">
-            <span className="text-foreground">DarLink</span>
-            <span className="text-primary">DZ</span>
-          </div>
+          <Logo className="h-8 md:h-10 w-auto" />
         </div>
 
         {/* Right Actions */}

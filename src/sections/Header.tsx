@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Menu, X, User, Globe, Moon, Sun, Plus } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/context/AuthContext';
+import Logo from '@/components/Logo';
 
 const Header = () => {
   const { t, i18n } = useTranslation();
@@ -15,8 +16,6 @@ const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
-  const [logoError, setLogoError] = useState(false);
-  const siteLogo = localStorage.getItem('siteLogo') || '/logo.jpg';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -51,20 +50,7 @@ const Header = () => {
       <div className="container-custom flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center">
-          {!logoError ? (
-            <img 
-              src={siteLogo} 
-              alt="DarLinkDZ Logo" 
-              className="h-[32px] md:h-[40px] w-auto object-contain"
-              onError={() => setLogoError(true)}
-            />
-          ) : (
-            <div className="font-display font-bold text-xl md:text-2xl tracking-tight flex items-center">
-              <span className="text-white">Dar</span>
-              <span style={{ color: '#00F5C4' }}>Link</span>
-              <span style={{ color: '#7B2FBE' }}>DZ</span>
-            </div>
-          )}
+          <Logo className="h-[32px] md:h-[40px] w-auto" />
         </Link>
 
         {/* Desktop Navigation */}
