@@ -1,48 +1,69 @@
 import { useState, useEffect } from 'react';
-import { useFirebase } from '@/contexts/FirebaseContext';
+import { useAuth } from '@/context/AuthContext';
 import { useApp } from '@/contexts/AppContext';
-import { db, handleFirestoreError, OperationType } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, deleteDoc, doc, updateDoc } from 'firebase/firestore';
-import { Trash2, CheckCircle, Clock, MapPin, DollarSign, Plus, LayoutGrid } from 'lucide-react';
+import { supabase } from '@/supabase';
+import { Trash2, CheckCircle, Clock, MapPin, Plus, LayoutGrid } from 'lucide-react';
 import { Button } from './ui/button';
 
 export default function MyListings() {
-  const { user } = useFirebase();
+  const { user } = useAuth();
   const { language } = useApp();
   const [listings, setListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchListings = async () => {
     if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('agent_id', user.uid)
+        .order('created_at', { ascending: false });
 
-    const q = query(collection(db, 'properties'), where('uid', '==', user.uid));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setListings(data);
+      if (error) throw error;
+      setListings(data || []);
+    } catch (error) {
+      console.error('Error fetching listings:', error);
+    } finally {
       setLoading(false);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'properties');
-      setLoading(false);
-    });
+    }
+  };
 
-    return () => unsubscribe();
+  useEffect(() => {
+    if (user) {
+      fetchListings();
+    }
   }, [user]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer cette annonce ?')) return;
     try {
-      await deleteDoc(doc(db, 'properties', id));
+      const { error } = await supabase
+        .from('properties')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      fetchListings();
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, 'properties');
+      console.error('Error deleting property:', error);
+      alert('Erreur lors de la suppression');
     }
   };
 
   const toggleStatus = async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === 'available' ? 'sold' : 'available';
     try {
-      await updateDoc(doc(db, 'properties', id), { status: newStatus });
+      const { error } = await supabase
+        .from('properties')
+        .update({ status: newStatus })
+        .eq('id', id);
+
+      if (error) throw error;
+      fetchListings();
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, 'properties');
+      console.error('Error updating status:', error);
+      alert('Erreur lors de la modification du statut');
     }
   };
 
@@ -124,7 +145,7 @@ export default function MyListings() {
                     <div className="flex items-center space-x-4">
                       <div className="flex items-center text-sm">
                         <Clock className="h-4 w-4 mr-1 text-muted-foreground" />
-                        {listing.createdAt?.toDate().toLocaleDateString()}
+                        {listing.created_at ? new Date(listing.created_at).toLocaleDateString() : ''}
                       </div>
                     </div>
                     

@@ -3,8 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { Search, Bell, Trash2, Power, PowerOff, LogIn } from 'lucide-react';
 import { Button } from './ui/button';
-import { db, handleFirestoreError, OperationType, loginWithGoogle } from '@/lib/firebase';
-import { collection, query, where, getDocs, updateDoc, deleteDoc, doc, onSnapshot } from 'firebase/firestore';
+import { supabase } from '@/supabase';
 
 export default function MyAlerts() {
   const { t, i18n } = useTranslation();
@@ -18,9 +17,95 @@ export default function MyAlerts() {
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     try {
-      await loginWithGoogle();
+      await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+    } catch (err) {
+      console.error(err);
     } finally {
       setGoogleLoading(false);
+    }
+  };
+
+  const fetchAlerts = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('alerts')
+        .select('*')
+        .eq('uid', user.uid)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setAlerts(data || []);
+      setHasSearched(true);
+    } catch (err) {
+      console.error('Error fetching alerts:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchAlerts();
+    }
+  }, [user]);
+
+  const handleSearch = async () => {
+    if (!searchPhone) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('alerts')
+        .select('*')
+        .eq('phone', searchPhone)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setAlerts(data || []);
+      setHasSearched(true);
+    } catch (error) {
+      console.error('Error searching alerts:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleAlert = async (id: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('alerts')
+        .update({ active: !currentStatus })
+        .eq('id', id);
+
+      if (error) throw error;
+      if (user) {
+        fetchAlerts();
+      } else {
+        handleSearch();
+      }
+    } catch (error) {
+      console.error('Error toggling alert:', error);
+    }
+  };
+
+  const deleteAlert = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('alerts')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      if (user) {
+        fetchAlerts();
+      } else {
+        handleSearch();
+      }
+    } catch (error) {
+      console.error('Error deleting alert:', error);
     }
   };
 
@@ -33,53 +118,6 @@ export default function MyAlerts() {
 
   const currentLang = i18n.language.split('-')[0];
   const l = labels[currentLang as keyof typeof labels] || labels.en;
-
-  useEffect(() => {
-    if (!user) return;
-
-    const q = query(collection(db, 'alerts'), where('uid', '==', user.uid));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const alertsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setAlerts(alertsData);
-      setHasSearched(true);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'alerts');
-    });
-
-    return () => unsubscribe();
-  }, [user]);
-
-  const handleSearch = async () => {
-    if (!searchPhone) return;
-    setLoading(true);
-    try {
-      const q = query(collection(db, 'alerts'), where('phone', '==', searchPhone));
-      const snapshot = await getDocs(q);
-      const alertsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setAlerts(alertsData);
-      setHasSearched(true);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.LIST, 'alerts');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const toggleAlert = async (id: string, currentStatus: boolean) => {
-    try {
-      await updateDoc(doc(db, 'alerts', id), { active: !currentStatus });
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `alerts/${id}`);
-    }
-  };
-
-  const deleteAlert = async (id: string) => {
-    try {
-      await deleteDoc(doc(db, 'alerts', id));
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `alerts/${id}`);
-    }
-  };
 
   if (!user && !hasSearched) {
     return (

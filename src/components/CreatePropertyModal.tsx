@@ -2,11 +2,8 @@ import React, { useState, useRef } from 'react';
 import { X, Plus, Image as ImageIcon, Video, Mic, MapPin, DollarSign, Bed, Bath, Maximize, Send, Trash2, StopCircle } from 'lucide-react';
 import { Button } from './ui/button';
 import { useApp } from '@/contexts/AppContext';
-import { useFirebase } from '@/contexts/FirebaseContext';
-import { db, handleFirestoreError, OperationType } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '@/firebase';
+import { useAuth } from '@/context/AuthContext';
+import { uploadFile } from '@/lib/upload';
 import { supabase } from '@/supabase';
 import { motion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
@@ -18,7 +15,7 @@ interface CreatePropertyModalProps {
 export default function CreatePropertyModal({ onClose }: CreatePropertyModalProps) {
   const { language } = useApp();
   const { t } = useTranslation();
-  const { user } = useFirebase();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   
   const [isRecording, setIsRecording] = useState(false);
@@ -60,53 +57,57 @@ export default function CreatePropertyModal({ onClose }: CreatePropertyModalProp
 
     setLoading(true);
     try {
-      const path = 'properties';
       const validImages = formData.images.filter(img => img.trim() !== '');
       
       const uploadPromises = validImages.map(async (dataUrl, index) => {
         const response = await fetch(dataUrl);
         const blob = await response.blob();
-        const imageRef = ref(storage, `properties/${user.uid}/${Date.now()}_${index}.jpg`);
-        await uploadBytes(imageRef, blob);
-        return getDownloadURL(imageRef);
+        const file = new File([blob], `image_${index}.jpg`, { type: 'image/jpeg' });
+        return uploadFile(file);
       });
       
       const uploadedImageUrls = await Promise.all(uploadPromises);
-      
-      await addDoc(collection(db, path), {
-        ...formData,
-        price: Number(formData.price),
-        images: uploadedImageUrls,
-        image: uploadedImageUrls.length > 0 ? uploadedImageUrls[0] : '', // Fallback for older components
-        agentId: user.uid,
-        agentName: user.displayName || user.email?.split('@')[0] || 'Agent',
-        featured: false,
-        createdAt: serverTimestamp()
-      });
 
-      // Also try saving to Supabase if configured
-      try {
-        const { error: supabaseError } = await supabase
-          .from('properties')
-          .insert([{
-            ...formData,
-            price: Number(formData.price),
-            images: uploadedImageUrls,
-            image: uploadedImageUrls.length > 0 ? uploadedImageUrls[0] : '',
-            agent_id: user.uid,
-            featured: false,
-            created_at: new Date().toISOString()
-          }]);
-        
-        if (supabaseError) console.error('Supabase save error:', supabaseError.message);
-      } catch (supaErr) {
-        console.error('Supabase integration error:', supaErr);
+      let uploadedAudioUrl = '';
+      if (formData.audio && formData.audio.startsWith('data:')) {
+        const response = await fetch(formData.audio);
+        const blob = await response.blob();
+        const file = new File([blob], `audio_${Date.now()}.webm`, { type: 'audio/webm' });
+        uploadedAudioUrl = await uploadFile(file);
+      } else {
+        uploadedAudioUrl = formData.audio;
       }
+      
+      const { error: supabaseError } = await supabase
+        .from('properties')
+        .insert([{
+          title: formData.title,
+          type: formData.type,
+          property_type: formData.propertyType,
+          price: Number(formData.price),
+          location: formData.location,
+          address: formData.address,
+          city: formData.city,
+          bedrooms: Number(formData.bedrooms),
+          bathrooms: Number(formData.bathrooms),
+          area: Number(formData.area),
+          description: formData.description,
+          images: uploadedImageUrls,
+          image: uploadedImageUrls.length > 0 ? uploadedImageUrls[0] : '',
+          video: formData.video,
+          audio: uploadedAudioUrl,
+          agent_id: user.uid,
+          featured: false,
+          status: 'available'
+        }]);
+
+      if (supabaseError) throw supabaseError;
 
       onClose();
       window.dispatchEvent(new CustomEvent('property-created'));
-    } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'properties');
+    } catch (error: any) {
+      console.error('Submit error:', error);
+      alert('Error creating property: ' + error.message);
     } finally {
       setLoading(false);
     }

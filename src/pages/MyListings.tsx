@@ -3,11 +3,10 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
 import { Plus, Edit, Trash2, Eye, MapPin, DollarSign, Home } from 'lucide-react';
-import { collection, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
-import { db } from '@/firebase';
 import { useAuth } from '@/context/AuthContext';
 import BackButton from '@/components/BackButton';
 import { useApp } from '@/contexts/AppContext';
+import { supabase } from '@/supabase';
 
 const MyListings = () => {
   const { t } = useTranslation();
@@ -17,36 +16,67 @@ const MyListings = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const fetchListings = async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { data, error: supaErr } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('agent_id', user.uid)
+        .order('created_at', { ascending: false });
+
+      if (supaErr) throw supaErr;
+
+      const mapped = (data || []).map(item => ({
+        id: item.id,
+        title: item.title,
+        description: item.description,
+        price: Number(item.price),
+        location: item.location,
+        address: item.address,
+        city: item.city,
+        type: item.type,
+        propertyType: item.property_type || item.propertyType,
+        bedrooms: item.bedrooms,
+        bathrooms: item.bathrooms,
+        area: item.area,
+        images: item.images || [],
+        video: item.video,
+        audio: item.audio,
+        featured: item.featured,
+        createdAt: item.created_at,
+        agentId: item.agent_id || item.agentId,
+        lat: item.lat,
+        lng: item.lng
+      }));
+
+      setListings(mapped);
+    } catch (err) {
+      console.error('Error fetching listings:', err);
+      setError('Failed to load your listings.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchListings = async () => {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const q = query(collection(db, 'properties'), where('agentId', '==', user.uid));
-        const querySnapshot = await getDocs(q);
-        const fetchedListings = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        setListings(fetchedListings);
-      } catch (err) {
-        console.error('Error fetching listings:', err);
-        setError('Failed to load your listings.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchListings();
   }, [user]);
 
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this listing?')) {
       try {
-        await deleteDoc(doc(db, 'properties', id));
+        const { error: delErr } = await supabase
+          .from('properties')
+          .delete()
+          .eq('id', id);
+
+        if (delErr) throw delErr;
+        
         setListings(listings.filter(listing => listing.id !== id));
       } catch (err) {
         console.error('Error deleting listing:', err);
@@ -158,13 +188,13 @@ const MyListings = () => {
                       {t('common.view')}
                     </Link>
                     <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => alert('Edit functionality coming soon')}
+                      <Link
+                        to={`/publish?edit=${listing.id}`}
                         className="p-2 text-muted-foreground hover:text-blue-500 transition-colors rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20"
                         title={t('common.edit')}
                       >
                         <Edit className="w-4 h-4" />
-                      </button>
+                      </Link>
                       <button
                         onClick={() => handleDelete(listing.id)}
                         className="p-2 text-muted-foreground hover:text-red-500 transition-colors rounded-full hover:bg-red-50 dark:hover:bg-red-900/20"

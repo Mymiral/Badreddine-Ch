@@ -1,20 +1,21 @@
-import React, { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
 import { Upload, Mic, MapPin, Home, DollarSign, CheckCircle2, X, StopCircle, Video } from 'lucide-react';
-import { collection, addDoc, serverTimestamp, getDocs, query, where } from 'firebase/firestore';
-import { db } from '@/firebase';
 import { useAuth } from '@/context/AuthContext';
 import LocationSelector from '@/components/LocationSelector';
 import BackButton from '@/components/BackButton';
 import { MapPicker } from '@/components/MapPicker';
 import UploadZone, { UploadedFile } from '@/components/UploadZone';
 import { supabase } from '@/supabase';
+import { uploadFile } from '@/lib/upload';
 
 const PublishProperty = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get('edit');
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +45,76 @@ const PublishProperty = () => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<BlobPart[]>([]);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (!editId || !user) return;
+
+    const fetchPropertyForEdit = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('properties')
+          .select('*')
+          .eq('id', editId)
+          .single();
+
+        if (error) throw error;
+
+        if (data) {
+          // Verify ownership
+          if (data.agent_id !== user.uid) {
+            setError("You don't have permission to edit this property.");
+            return;
+          }
+
+          setFormData({
+            title: data.title || '',
+            type: data.type || 'sale',
+            propertyType: data.property_type || 'apartment',
+            price: String(data.price || ''),
+            description: data.description || '',
+            location: data.location || '',
+            address: data.address || '',
+            city: data.city || '',
+            bedrooms: String(data.bedrooms || ''),
+            bathrooms: String(data.bathrooms || ''),
+            area: String(data.area || ''),
+            video: data.video || '',
+            audio: data.audio || '',
+            features: data.features || [],
+          });
+
+          if (data.lat && data.lng) {
+            setMapPosition({ lat: Number(data.lat), lng: Number(data.lng) });
+          }
+
+          // Populate uploads with existing images
+          if (data.images && Array.isArray(data.images)) {
+            const existingFiles = data.images.map((url: string, index: number) => {
+              const filename = url.split('/').pop() || `image_${index}`;
+              const dummyFile = new File([], filename);
+              return {
+                id: `existing_${index}_${Date.now()}`,
+                file: dummyFile,
+                progress: 100,
+                speed: '',
+                status: 'success' as const,
+                url: url
+              };
+            });
+            setUploads(existingFiles);
+          }
+        }
+      } catch (err: any) {
+        console.error('Error fetching property for edit:', err);
+        setError(`Failed to load property data: ${err.message}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPropertyForEdit();
+  }, [editId, user]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -125,86 +196,106 @@ const PublishProperty = () => {
         if (u.url) {
           if (u.file.type.startsWith('video/')) {
             videoUrl = u.url;
-          } else if (u.file.type.startsWith('image/')) {
-            mediaUrls.push(u.url);
           } else {
-             // Let's just consider all other formats as mediaUrls too.
             mediaUrls.push(u.url);
           }
         }
       });
-      
-      // 2. Save Announcement to Supabase (User prompt 5)
-      const { data: supaData, error: supaError } = await supabase
-        .from('announcements')
-        .insert([{
-          title: formData.title,
-          description: formData.description,
-          type: formData.type === 'sale' ? 'vente' : 'location', // mapped based on pg check
-          property_type: formData.propertyType,
-          price: Number(formData.price),
-          surface: Number(formData.area),
-          rooms: Number(formData.bedrooms),
-          bathrooms: Number(formData.bathrooms),
-          wilaya: formData.city,
-          commune: formData.location,
-          lat: mapPosition?.lat || null,
-          lng: mapPosition?.lng || null,
-          media_urls: mediaUrls,
-          video_url: videoUrl,
-          is_published: true
-        }]);
+
+      let uploadedAudioUrl = '';
+      if (formData.audio && formData.audio.startsWith('data:')) {
+        const response = await fetch(formData.audio);
+        const blob = await response.blob();
+        const file = new File([blob], `audio_${Date.now()}.webm`, { type: 'audio/webm' });
+        uploadedAudioUrl = await uploadFile(file);
+      } else {
+        uploadedAudioUrl = formData.audio;
+      }
+      // 2. Save Announcement to Supabase properties table
+      const dbQuery = editId 
+        ? supabase
+            .from('properties')
+            .update({
+              title: formData.title,
+              description: formData.description,
+              type: formData.type,
+              property_type: formData.propertyType,
+              price: Number(formData.price),
+              area: Number(formData.area),
+              bedrooms: Number(formData.bedrooms),
+              bathrooms: Number(formData.bathrooms),
+              city: formData.city,
+              location: formData.location,
+              address: formData.address,
+              lat: mapPosition?.lat || null,
+              lng: mapPosition?.lng || null,
+              images: mediaUrls,
+              video: videoUrl || formData.video,
+              audio: uploadedAudioUrl,
+              status: 'available'
+            })
+            .eq('id', editId)
+        : supabase
+            .from('properties')
+            .insert([{
+              title: formData.title,
+              description: formData.description,
+              type: formData.type,
+              property_type: formData.propertyType,
+              price: Number(formData.price),
+              area: Number(formData.area),
+              bedrooms: Number(formData.bedrooms),
+              bathrooms: Number(formData.bathrooms),
+              city: formData.city,
+              location: formData.location,
+              address: formData.address,
+              lat: mapPosition?.lat || null,
+              lng: mapPosition?.lng || null,
+              images: mediaUrls,
+              video: videoUrl || formData.video,
+              audio: uploadedAudioUrl,
+              agent_id: user.uid,
+              featured: false,
+              status: 'available'
+            }]);
+
+      const { data: supaData, error: supaError } = await dbQuery.select().single();
       
       if (supaError) {
         console.error("Supabase Save Error:", supaError);
-        // Show exact error as requested
         throw new Error(supaError.message || JSON.stringify(supaError));
       }
 
-      // Also still write to Firebase just in case to not break other dashboard logic if they exist
-      const propertyData = {
-        ...formData,
-        price: Number(formData.price),
-        bedrooms: Number(formData.bedrooms),
-        bathrooms: Number(formData.bathrooms),
-        area: Number(formData.area),
-        video: videoUrl,
-        audio: formData.audio,
-        images: mediaUrls,
-        agentId: user.uid,
-        agentName: user.displayName || user.email?.split('@')[0] || 'Agent',
-        featured: false,
-        createdAt: serverTimestamp(),
-        lat: mapPosition?.lat || null,
-        lng: mapPosition?.lng || null,
-      };
-      await addDoc(collection(db, 'properties'), propertyData);
-
-      // Smart Alert Matching Logic
+      // Smart Alert Matching Logic in Supabase
       try {
-        const alertsSnapshot = await getDocs(query(collection(db, 'alerts'), where('is_active', '==', true)));
-        alertsSnapshot.forEach(async (alertDoc) => {
-          const alert = alertDoc.data();
-          const matchType = alert.propertyType === 'Tous' || alert.propertyType.toLowerCase() === propertyData.propertyType.toLowerCase();
-          const matchTransaction = alert.transaction === 'Tous' || alert.transaction.toLowerCase() === (propertyData.type === 'sale' ? 'vente' : 'location');
-          const matchWilaya = alert.wilaya === 'Tous' || alert.wilaya === propertyData.city;
-          const matchBudget = !alert.budget || propertyData.price <= alert.budget;
-          
-          if (matchType && matchTransaction && matchWilaya && matchBudget) {
-            await addDoc(collection(db, 'notifications'), {
-              alertId: alertDoc.id,
-              phone: alert.phone,
-              propertyTitle: propertyData.title,
-              isRead: false,
-              createdAt: serverTimestamp()
-            });
+        const { data: alertsData } = await supabase
+          .from('alerts')
+          .eq('active', true);
+
+        if (alertsData) {
+          for (const alert of alertsData) {
+            const matchType = !alert.type || alert.type === 'Tous' || alert.type.toLowerCase() === formData.propertyType.toLowerCase();
+            const matchWilaya = !alert.location || alert.location === 'Tous' || alert.location === formData.city;
+            // Compare budget string or convert it if it has range/number
+            const maxBudget = parseFloat(alert.budget || '0');
+            const matchBudget = !maxBudget || Number(formData.price) <= maxBudget;
+            
+            if (matchType && matchWilaya && matchBudget) {
+              await supabase.from('notifications').insert([{
+                uid: alert.uid,
+                title: 'Nouveau bien assorti !',
+                content: `Le bien "${formData.title}" correspond à vos alertes.`,
+                read: false
+              }]);
+            }
           }
-        });
+        }
       } catch (alertErr) {
         console.error('Error processing alerts:', alertErr);
       }
 
       setSuccess(true);
+      window.dispatchEvent(new CustomEvent('property-created'));
       setTimeout(() => {
         navigate('/my-listings');
       }, 2000);
@@ -227,7 +318,7 @@ const PublishProperty = () => {
           <div className="w-20 h-20 bg-green-100 dark:bg-green-900/20 text-green-500 dark:text-green-400 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle2 className="w-10 h-10" />
           </div>
-          <h2 className="text-2xl font-bold mb-2">{t('publish.success')}</h2>
+          <h2 className="text-2xl font-bold mb-2">{editId ? t('publish.editSuccess', 'Annonce modifiée avec succès !') : t('publish.success')}</h2>
           <p className="text-muted-foreground mb-6">Redirecting to your listings...</p>
         </motion.div>
       </div>
@@ -243,8 +334,12 @@ const PublishProperty = () => {
       <div className="container-custom max-w-4xl">
         <BackButton />
         <div className="mb-10">
-          <h1 className="text-3xl md:text-4xl font-display font-bold mb-4">{t('publish.title')}</h1>
-          <p className="text-muted-foreground text-lg">{t('publish.subtitle')}</p>
+          <h1 className="text-3xl md:text-4xl font-display font-bold mb-4">
+            {editId ? t('publish.editTitle', "Modifier l'annonce") : t('publish.title')}
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            {editId ? t('publish.editSubtitle', "Modifiez les détails de votre propriété") : t('publish.subtitle')}
+          </p>
         </div>
 
         {error && (
@@ -540,10 +635,10 @@ const PublishProperty = () => {
               {loading || isUploading ? (
                 <>
                   <div className="w-5 h-5 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
-                  {isUploading ? `${uploadedCount}/${totalUploads} fichiers uploadés` : 'Publication...'}
+                  {isUploading ? `${uploadedCount}/${totalUploads} fichiers uploadés` : editId ? 'Enregistrement...' : 'Publication...'}
                 </>
               ) : (
-                t('publish.publish')
+                editId ? t('publish.saveChanges', 'Enregistrer les modifications') : t('publish.publish')
               )}
             </button>
           </div>
