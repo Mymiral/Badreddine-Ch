@@ -1,8 +1,8 @@
 import { useApp } from '@/contexts/AppContext';
-import { useAuth } from '@/context/AuthContext';
+import { useFirebase } from '@/contexts/FirebaseContext';
 import { Globe, Menu, X, Home, Plus, Map as MapIcon, LogIn, LogOut, User, LayoutGrid, Sun, Moon, Coins } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/supabase';
+import { loginWithGoogle, logout } from '@/lib/firebase';
 import { useTranslation } from 'react-i18next';
 import CreatePropertyModal from './CreatePropertyModal';
 import { motion, AnimatePresence } from 'motion/react';
@@ -11,16 +11,7 @@ import Logo from '@/components/Logo';
 export default function Header() {
   const { language, setLanguage, currency, setCurrency } = useApp();
   const { t } = useTranslation();
-  const { user, logout } = useAuth();
-
-  const loginWithGoogle = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin
-      }
-    });
-  };
+  const { user } = useFirebase();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {

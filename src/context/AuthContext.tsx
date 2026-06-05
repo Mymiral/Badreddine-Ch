@@ -1,8 +1,13 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '@/supabase';
-import { User as SupabaseUser } from '@supabase/supabase-js';
+import { auth, db } from '@/firebase';
+import { 
+  onIdTokenChanged, 
+  User as FirebaseUser,
+  signOut as firebaseSignOut
+} from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
-export interface UserProfile {
+interface UserProfile {
   uid: string;
   email: string | null;
   displayName: string | null;
@@ -24,72 +29,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Check current active session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        localStorage.setItem('hasVisitedWelcome', 'true');
-        fetchProfile(session.user);
+    const unsubscribe = onIdTokenChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+      if (firebaseUser) {
+        try {
+          // Fetch additional user data from Firestore
+          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          const userData = userDoc.exists() ? userDoc.data() : {};
+
+          setUser({
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName || userData.name || null,
+            phoneNumber: firebaseUser.phoneNumber || userData.phone || null,
+            photoURL: firebaseUser.photoURL,
+            role: userData.role || 'user',
+          });
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+          // Fallback to basic auth data
+          setUser({
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName,
+            phoneNumber: firebaseUser.phoneNumber,
+            photoURL: firebaseUser.photoURL,
+            role: 'user',
+          });
+        }
       } else {
         setUser(null);
-        setLoading(false);
       }
-    });
-
-    // 2. Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        localStorage.setItem('hasVisitedWelcome', 'true');
-        await fetchProfile(session.user);
-      } else {
-        setUser(null);
-        setLoading(false);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  const fetchProfile = async (supabaseUser: SupabaseUser) => {
-    try {
-      // Query our public.users table to get custom metadata like role and phone
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', supabaseUser.id)
-        .single();
-
-      if (error) {
-        console.warn('Error fetching user profile from public.users table:', error);
-      }
-
-      setUser({
-        uid: supabaseUser.id,
-        email: supabaseUser.email || null,
-        displayName: data?.display_name || supabaseUser.user_metadata?.displayName || supabaseUser.user_metadata?.name || null,
-        phoneNumber: data?.phone_number || supabaseUser.phone || null,
-        photoURL: data?.photo_url || supabaseUser.user_metadata?.avatar_url || null,
-        role: (data?.role as 'user' | 'agent' | 'admin') || 'user',
-      });
-    } catch (error) {
-      console.error('Error in fetchProfile:', error);
-      setUser({
-        uid: supabaseUser.id,
-        email: supabaseUser.email || null,
-        displayName: supabaseUser.user_metadata?.displayName || supabaseUser.user_metadata?.name || null,
-        phoneNumber: supabaseUser.phone || null,
-        photoURL: supabaseUser.user_metadata?.avatar_url || null,
-        role: 'user',
-      });
-    } finally {
       setLoading(false);
-    }
-  };
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const logout = async () => {
     try {
-      await supabase.auth.signOut();
+      await firebaseSignOut(auth);
       localStorage.removeItem('hasVisitedWelcome');
       window.location.href = '/welcome';
     } catch (error) {

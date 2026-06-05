@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
-import { supabase } from '@/supabase';
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { auth } from '@/firebase';
 import Logo from '@/components/Logo';
 
 const Login = () => {
@@ -21,20 +22,12 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await supabase.auth.signInWithPassword({ email, password });
-
-      const { data, error: err } = response;
-      if (err) {
-        throw err;
-      }
-
-      localStorage.setItem('hasVisitedWelcome', 'true');
+      await signInWithEmailAndPassword(auth, email, password);
       navigate('/');
     } catch (err: any) {
-      console.error('Caught error in handleLogin:', err);
-      setError(err?.message || 'Identifiants incorrects. Veuillez réessayer.');
+      console.error('Login error:', err);
+      setError('Identifiants incorrects. Veuillez réessayer.');
     } finally {
-      console.log('handleLogin finally block reached, setting loading to false');
       setLoading(false);
     }
   };
@@ -42,18 +35,14 @@ const Login = () => {
   const handleGoogleLogin = async () => {
     setError('');
     setGoogleLoading(true);
+    const provider = new GoogleAuthProvider();
     try {
-      localStorage.setItem('hasVisitedWelcome', 'true');
-      const { error: err } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin
-        }
-      });
-      if (err) throw err;
+      await signInWithPopup(auth, provider);
+      navigate('/');
     } catch (err: any) {
       console.error('Google login error:', err);
       setError('Erreur lors de la connexion avec Google.');
+    } finally {
       setGoogleLoading(false);
     }
   };

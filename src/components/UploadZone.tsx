@@ -17,54 +17,6 @@ interface UploadZoneProps {
   setFiles: React.Dispatch<React.SetStateAction<UploadedFile[]>>;
 }
 
-function FilePreview({ file, url }: { file: File; url?: string }) {
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (url) {
-      setPreviewUrl(url);
-      return;
-    }
-    if (!file) return;
-    const isImage = file.type.startsWith('image/');
-    const isVideo = file.type.startsWith('video/');
-    
-    if (isImage || isVideo) {
-      const objectUrl = URL.createObjectURL(file);
-      setPreviewUrl(objectUrl);
-      return () => {
-        URL.revokeObjectURL(objectUrl);
-      };
-    }
-  }, [file, url]);
-
-  if (!previewUrl) return null;
-
-  const isVideo = file.type.startsWith('video/') || 
-                  previewUrl.toLowerCase().includes('.mp4') || 
-                  previewUrl.toLowerCase().includes('.mov') || 
-                  previewUrl.toLowerCase().includes('.webm');
-
-  if (isVideo) {
-    return (
-      <video 
-        src={previewUrl} 
-        className="w-12 h-12 rounded-lg object-cover bg-muted shrink-0" 
-        muted 
-        playsInline
-      />
-    );
-  }
-
-  return (
-    <img 
-      src={previewUrl} 
-      alt={file.name} 
-      className="w-12 h-12 rounded-lg object-cover bg-muted shrink-0" 
-    />
-  );
-}
-
 export default function UploadZone({ files, setFiles }: UploadZoneProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -243,7 +195,6 @@ export default function UploadZone({ files, setFiles }: UploadZoneProps) {
             
             return (
               <div key={u.id} className="flex items-center gap-4 bg-muted/30 p-4 rounded-xl border border-border">
-                <FilePreview file={u.file} url={u.url} />
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-center text-sm mb-2">
                     <span className="font-semibold truncate pr-4 text-foreground">

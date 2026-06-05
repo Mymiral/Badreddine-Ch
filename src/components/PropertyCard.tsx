@@ -1,10 +1,15 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { MapPin, BedDouble, Bath, Square, Heart, ChevronLeft, ChevronRight, MessageCircle, BadgeCheck } from 'lucide-react';
+import { MapPin, BedDouble, Bath, Square, Heart, ChevronLeft, ChevronRight, MessageCircle, BadgeCheck, Pencil, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import React, { useState } from 'react';
 import { DarScoreBadge } from '@/components/DarScoreBadge';
 import { useApp } from '@/contexts/AppContext';
+import { useFavorites } from '@/hooks/useFavorites';
+import { useAuth } from '@/context/AuthContext';
+import { doc, deleteDoc } from 'firebase/firestore';
+import { db } from '@/firebase';
+import EditPropertyModal from '@/components/EditPropertyModal';
 
 interface PropertyCardProps {
   property: {
@@ -18,6 +23,8 @@ interface PropertyCardProps {
     area: number;
     images: string[];
     featured?: boolean;
+    agentId?: string;
+    userId?: string;
     agent?: {
       name: string;
       verified?: boolean;
@@ -30,8 +37,12 @@ interface PropertyCardProps {
 const PropertyCard = ({ property, highlighted }: PropertyCardProps) => {
   const { t } = useTranslation();
   const { formatPrice } = useApp();
-  const [isFavorite, setIsFavorite] = useState(false);
+  const { user } = useAuth();
+  const { toggleFavorite, isFavorite } = useFavorites();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const navigate = useNavigate();
 
   const nextImage = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -45,11 +56,37 @@ const PropertyCard = ({ property, highlighted }: PropertyCardProps) => {
     setCurrentImageIndex((prev) => (prev - 1 + (property.images.length || 1)) % (property.images.length || 1));
   };
 
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (window.confirm("Are you sure you want to delete this listing?")) {
+      setIsDeleting(true);
+      try {
+        await deleteDoc(doc(db, 'properties', property.id));
+        // It will reactively disappear due to onSnapshot in context
+      } catch (err) {
+        console.error("Failed to delete property", err);
+        alert("Failed to delete property");
+      } finally {
+        setIsDeleting(false);
+      }
+    }
+  };
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsEditModalOpen(true);
+  };
+
   const images = property.images && property.images.length > 0 
     ? property.images 
     : (property as any).image 
       ? [(property as any).image] 
       : ['https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'];
+
+  // Check if current user is the creator (admin)
+  const isCreator = user && (user.uid === property.agentId || user.uid === property.userId);
 
   return (
     <motion.div
@@ -120,14 +157,31 @@ const PropertyCard = ({ property, highlighted }: PropertyCardProps) => {
 
         {/* Favorite Button */}
         <button
-          onClick={(e) => {
-            e.preventDefault();
-            setIsFavorite(!isFavorite);
-          }}
-          className="absolute top-4 right-4 p-2 rounded-full bg-white/20 backdrop-blur-md hover:bg-white/40 transition-colors"
+          onClick={(e) => toggleFavorite(property.id, e)}
+          className="absolute top-4 right-4 p-2 rounded-full bg-white/20 backdrop-blur-md hover:bg-white/40 transition-colors z-20"
         >
-          <Heart className={`w-5 h-5 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-white'}`} />
+          <Heart className={`w-5 h-5 ${isFavorite(property.id) ? 'fill-red-500 text-red-500' : 'text-white'}`} />
         </button>
+
+        {isCreator && (
+          <div className="absolute top-4 right-16 flex gap-2 z-20">
+            <button
+              onClick={handleEdit}
+              className="p-2 rounded-full bg-white/20 backdrop-blur-md hover:bg-white/40 transition-colors"
+              title="Edit Property"
+            >
+              <Pencil className="w-5 h-5 text-white" />
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="p-2 rounded-full bg-red-500/80 backdrop-blur-md hover:bg-red-600 transition-colors disabled:opacity-50"
+              title="Delete Property"
+            >
+              <Trash2 className="w-5 h-5 text-white" />
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="p-6">
@@ -196,6 +250,14 @@ const PropertyCard = ({ property, highlighted }: PropertyCardProps) => {
           </a>
         </div>
       </div>
+      
+      {isCreator && (
+        <EditPropertyModal 
+          isOpen={isEditModalOpen} 
+          onClose={() => setIsEditModalOpen(false)} 
+          property={property} 
+        />
+      )}
     </motion.div>
   );
 };

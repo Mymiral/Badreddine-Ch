@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { X, Bell, CheckCircle2 } from 'lucide-react';
 import { Button } from './ui/button';
+import { db, handleFirestoreError, OperationType } from '@/lib/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { supabase } from '@/supabase';
 
 interface AlertModalProps {
@@ -36,26 +38,36 @@ export default function AlertModal({ onClose }: AlertModalProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     setLoading(true);
     try {
-      const { error: supabaseError } = await supabase
-        .from('alerts')
-        .insert([{
-          type: formData.type,
-          location: formData.location,
-          budget: formData.budget,
-          email: formData.email,
-          phone: formData.phone,
-          channels: formData.channels,
-          uid: user?.uid || null,
-          active: true
-        }]);
-      
-      if (supabaseError) throw supabaseError;
+      const path = 'alerts';
+      await addDoc(collection(db, path), {
+        ...formData,
+        uid: user?.uid || 'anonymous',
+        active: true,
+        createdAt: serverTimestamp()
+      });
+
+      // Also try saving to Supabase if configured
+      try {
+        const { error: supabaseError } = await supabase
+          .from('alerts')
+          .insert([{
+            ...formData,
+            uid: user?.uid || 'anonymous',
+            active: true,
+            created_at: new Date().toISOString()
+          }]);
+        
+        if (supabaseError) console.error('Supabase alert save error:', supabaseError.message);
+      } catch (supaErr) {
+        console.error('Supabase alert integration error:', supaErr);
+      }
+
       setIsSubmitted(true);
-    } catch (error: any) {
-      console.error('Error saving alert:', error);
-      alert('Erreur lors de la création de l\'alerte: ' + error.message);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'alerts');
     } finally {
       setLoading(false);
     }

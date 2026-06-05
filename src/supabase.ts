@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const isValidUrl = (url: string | undefined): boolean => {
   try {
@@ -20,20 +20,25 @@ if (!hasValidSupabaseConfig) {
 }
 
 export const supabase = hasValidSupabaseConfig
-  ? createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        lock: async (_name, _acquireTimeout, fn) => {
-          return await fn();
-        },
-      },
-    })
+  ? createClient(supabaseUrl, supabaseAnonKey)
   : ({
       from: () => ({
         insert: async () => {
           console.warn('Supabase is not configured. Saving to Supabase skipped.');
           return { error: { message: 'Supabase not configured' } };
         }
-      })
+      }),
+      storage: {
+        from: () => ({
+          upload: async () => {
+            console.warn('Supabase not configured. Mocking storage upload.');
+            return { error: { message: 'Supabase storage not configured' } };
+          },
+          getPublicUrl: () => {
+            return { data: { publicUrl: null } };
+          }
+        })
+      }
     } as any);
 
 /**

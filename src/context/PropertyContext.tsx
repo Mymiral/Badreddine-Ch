@@ -1,7 +1,8 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '@/supabase';
+import { db } from '@/firebase';
+import { collection, query, onSnapshot, orderBy, limit, where } from 'firebase/firestore';
 
-export interface Property {
+interface Property {
   id: string;
   title: string;
   description: string;
@@ -33,73 +34,40 @@ interface PropertyContextType {
 
 const PropertyContext = createContext<PropertyContextType | undefined>(undefined);
 
-const mapSupaProperty = (p: any): Property => ({
-  id: p.id,
-  title: p.title,
-  description: p.description || '',
-  price: Number(p.price),
-  location: p.location,
-  address: p.address || '',
-  city: p.city || '',
-  type: p.type,
-  propertyType: p.property_type || p.propertyType || '',
-  bedrooms: Number(p.bedrooms || 0),
-  bathrooms: Number(p.bathrooms || 0),
-  area: Number(p.area || 0),
-  images: p.images || [],
-  video: p.video || '',
-  audio: p.audio || '',
-  featured: !!p.featured,
-  createdAt: p.created_at,
-  agentId: p.agent_id || p.agentId || '',
-  lat: p.lat ? Number(p.lat) : null,
-  lng: p.lng ? Number(p.lng) : null,
-});
-
 export function PropertyProvider({ children }: { children: ReactNode }) {
   const [properties, setProperties] = useState<Property[]>([]);
   const [featuredProperties, setFeaturedProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchProperties = async () => {
-    try {
-      const { data, error: err } = await supabase
-        .from('properties')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100);
-
-      if (err) throw err;
-
-      const mapped = (data || []).map(mapSupaProperty);
-      setProperties(mapped);
-      setFeaturedProperties(mapped.filter(p => p.featured).slice(0, 6));
-      setError(null);
-    } catch (err: any) {
-      console.error('Error fetching properties from Supabase:', err);
-      setError('Failed to load properties');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchProperties();
+    // Fetch all properties (limit to 50 for performance)
+    const q = query(
+      collection(db, 'properties'),
+      orderBy('createdAt', 'desc'),
+      limit(50)
+    );
 
-    // Listen to custom reload events
-    const reloadListener = () => {
-      fetchProperties();
-    };
-    window.addEventListener('property-created', reloadListener);
-    window.addEventListener('property-updated', reloadListener);
-    window.addEventListener('reload-properties', reloadListener);
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const propsData = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Property[];
+        
+        setProperties(propsData);
+        setFeaturedProperties(propsData.filter(p => p.featured).slice(0, 6));
+        setLoading(false);
+      },
+      (err) => {
+        console.error('Error fetching properties:', err);
+        setError('Failed to load properties');
+        setLoading(false);
+      }
+    );
 
-    return () => {
-      window.removeEventListener('property-created', reloadListener);
-      window.removeEventListener('property-updated', reloadListener);
-      window.removeEventListener('reload-properties', reloadListener);
-    };
+    return () => unsubscribe();
   }, []);
 
   return (

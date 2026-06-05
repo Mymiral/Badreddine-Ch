@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { useApp } from '@/contexts/AppContext';
 import { Property } from '@/types';
 import { useState, useEffect, useCallback } from 'react';
-import { useProperties } from '@/context/PropertyContext';
+import { db, handleFirestoreError, OperationType } from '@/lib/firebase';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { Star, MapPin, Bed, Bath, Maximize, Navigation, Crosshair } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -41,9 +42,23 @@ function MapController({ center }: { center: [number, number] | null }) {
 export default function GlobalMap() {
   const { language } = useApp();
   const { t } = useTranslation();
-  const { properties, loading } = useProperties();
+  const [properties, setProperties] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, 'properties'), (snapshot) => {
+      const props = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setProperties(props);
+      setLoading(false);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'properties');
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const locateUser = useCallback(() => {
     if (navigator.geolocation) {
