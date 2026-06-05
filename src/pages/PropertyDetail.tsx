@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
-import { MapPin, BedDouble, Bath, Square, Share2, Heart, Printer, Phone, Mail, CheckCircle2, Calendar, Video, Mic, Wand2 } from 'lucide-react';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/firebase';
+import { MapPin, BedDouble, Bath, Square, Share2, Heart, Printer, Phone, Mail, CheckCircle2, Calendar, Video, Mic } from 'lucide-react';
+import { supabase } from '@/supabase';
 import BackButton from '@/components/BackButton';
 
 import { EvaluationSection } from '@/components/EvaluationSection';
@@ -12,7 +11,26 @@ import { CommentsSection } from '@/components/CommentsSection';
 import PropertyMap from '@/components/PropertyMap';
 import { MortgageCalculator } from '@/components/MortgageCalculator';
 import { useApp } from '@/contexts/AppContext';
-import VirtualStagingModal from '@/components/VirtualStagingModal';
+
+const getVideoEmbedUrl = (url: string): string | null => {
+  if (!url) return null;
+  
+  // YouTube matches (including shorts, watch?v=, embed, youtu.be)
+  const ytRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+  const ytMatch = url.match(ytRegex);
+  if (ytMatch && ytMatch[1]) {
+    return `https://www.youtube.com/embed/${ytMatch[1]}`;
+  }
+
+  // Vimeo matches
+  const vimeoRegex = /(?:vimeo\.com\/)(?:video\/)?([0-9]+)/i;
+  const vimeoMatch = url.match(vimeoRegex);
+  if (vimeoMatch && vimeoMatch[1]) {
+    return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+  }
+
+  return null;
+};
 
 const PropertyDetail = () => {
   const { id } = useParams();
@@ -24,17 +42,28 @@ const PropertyDetail = () => {
   const [agent, setAgent] = useState<any>(null);
   const [activeImage, setActiveImage] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
-  const [vsModalOpen, setVsModalOpen] = useState(false);
   const [showVisitModal, setShowVisitModal] = useState(false);
   
   useEffect(() => {
     const fetchAgent = async () => {
       if (!property?.agentId) return;
       try {
-        const agentRef = doc(db, 'users', property.agentId);
-        const agentSnap = await getDoc(agentRef);
-        if (agentSnap.exists()) {
-          setAgent({ id: agentSnap.id, ...agentSnap.data() });
+        const { data: agentData } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', property.agentId)
+          .single();
+
+        if (agentData) {
+          setAgent({
+            id: agentData.id,
+            name: agentData.display_name,
+            displayName: agentData.display_name,
+            photoURL: agentData.photo_url,
+            email: agentData.email,
+            phone: agentData.phone_number,
+            role: agentData.role
+          });
         }
       } catch (err) {
         console.error('Error fetching agent:', err);
@@ -66,18 +95,43 @@ const PropertyDetail = () => {
 
   const toggleSave = () => {
     setIsSaved(!isSaved);
-    // Ideally this would sync with Firebase or local storage
   };
+
+  const embedUrl = property ? getVideoEmbedUrl(property.video) : null;
 
   useEffect(() => {
     const fetchProperty = async () => {
       try {
         if (!id) return;
-        const docRef = doc(db, 'properties', id);
-        const docSnap = await getDoc(docRef);
+        const { data, error: sErr } = await supabase
+          .from('properties')
+          .select('*')
+          .eq('id', id)
+          .single();
 
-        if (docSnap.exists()) {
-          setProperty({ id: docSnap.id, ...docSnap.data() });
+        if (data) {
+          setProperty({
+            id: data.id,
+            title: data.title,
+            description: data.description,
+            price: Number(data.price),
+            location: data.location,
+            address: data.address,
+            city: data.city,
+            type: data.type,
+            propertyType: data.property_type || data.propertyType,
+            bedrooms: data.bedrooms,
+            bathrooms: data.bathrooms,
+            area: data.area,
+            images: data.images || [],
+            video: data.video,
+            audio: data.audio,
+            featured: data.featured,
+            createdAt: data.created_at,
+            agentId: data.agent_id || data.agentId,
+            lat: data.lat,
+            lng: data.lng,
+          });
         } else {
           setError('Property not found');
         }
@@ -190,36 +244,39 @@ const PropertyDetail = () => {
         </div>
 
         {/* Video Section */}
-        {property.video && (
+        {property.video && property.video !== 'null' && property.video.trim() !== '' && (
           <div className="mb-8">
             <h2 className="text-2xl font-display font-bold mb-4 flex items-center gap-2">
               <Video className="w-6 h-6 text-brand-accent" /> Vidéo de présentation
             </h2>
             <div className="aspect-video rounded-2xl overflow-hidden border border-border bg-black">
-              <video 
-                src={property.video} 
-                controls
-                className="w-full h-full object-contain"
-              ></video>
+              {embedUrl ? (
+                <iframe
+                  src={embedUrl}
+                  title="Video presentation"
+                  className="w-full h-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              ) : (
+                <video 
+                  src={property.video} 
+                  controls
+                  className="w-full h-full object-contain"
+                ></video>
+              )}
             </div>
           </div>
         )}
 
         {/* Image Gallery */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-12">
-          <div className="md:col-span-3 h-[400px] md:h-[600px] rounded-2xl overflow-hidden relative group">
+          <div className="md:col-span-3 h-[400px] md:h-[600px] rounded-2xl overflow-hidden relative">
             <img
               src={images[activeImage]}
               alt={property.title}
               className="w-full h-full object-cover"
             />
-            <button 
-              onClick={() => setVsModalOpen(true)}
-              className="absolute bottom-6 right-6 bg-brand-accent text-white px-4 py-3 rounded-xl flex items-center gap-2 hover:bg-brand-accent/90 shadow-lg font-bold opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0"
-            >
-              <Wand2 className="w-5 h-5" />
-              Virtual Staging
-            </button>
           </div>
           <div className="flex md:flex-col gap-4 overflow-x-auto md:overflow-y-auto h-32 md:h-[600px] pb-2 md:pb-0 hide-scrollbar">
             {images.map((img: string, index: number) => (
@@ -278,7 +335,7 @@ const PropertyDetail = () => {
                 <div>
                   <p className="text-sm text-muted-foreground">{t('propertyDetail.publishedOn')}</p>
                   <p className="font-bold text-lg">
-                    {property.createdAt?.toDate ? new Date(property.createdAt.toDate()).toLocaleDateString() : 'N/A'}
+                    {property.createdAt ? new Date(property.createdAt.toDate ? property.createdAt.toDate() : property.createdAt).toLocaleDateString() : 'N/A'}
                   </p>
                 </div>
               </div>
@@ -451,12 +508,6 @@ const PropertyDetail = () => {
           </div>
         </div>
       )}
-      
-      <VirtualStagingModal 
-        isOpen={vsModalOpen} 
-        onClose={() => setVsModalOpen(false)} 
-        imageUrl={images[activeImage]} 
-      />
     </div>
   );
 };

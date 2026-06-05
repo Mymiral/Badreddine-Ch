@@ -3,8 +3,7 @@ import { Property } from '@/types';
 import { X, Send, CheckCircle2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { useApp } from '@/contexts/AppContext';
-import { db, handleFirestoreError, OperationType } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { supabase } from '@/supabase';
 
 interface ContactModalProps {
   property: Property;
@@ -31,20 +30,24 @@ export default function ContactModal({ property, onClose }: ContactModalProps) {
     e.preventDefault();
     setLoading(true);
     try {
-      await addDoc(collection(db, 'messages'), {
-        propertyId: property.id,
-        propertyTitle: property.title,
-        name,
-        email,
-        message,
-        createdAt: serverTimestamp()
-      });
+      const { error } = await supabase
+        .from('messages')
+        .insert([{
+          property_id: property.id,
+          property_title: property.title,
+          name,
+          email,
+          message
+        }]);
+
+      if (error) throw error;
       setSuccess(true);
       setTimeout(() => {
         onClose();
       }, 2000);
     } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'messages');
+      console.error('Error sending message:', error);
+      alert('Erreur lors de l\'envoi du message');
     } finally {
       setLoading(false);
     }

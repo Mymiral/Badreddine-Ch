@@ -3,9 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
 import { Mail, Lock, User, Phone, ArrowRight } from 'lucide-react';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import { auth, db } from '@/firebase';
+import { supabase } from '@/supabase';
 import Logo from '@/components/Logo';
 
 const Register = () => {
@@ -37,22 +35,37 @@ const Register = () => {
     setLoading(true);
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-      const user = userCredential.user;
-
-      await updateProfile(user, {
-        displayName: formData.name,
-      });
-
-      // Save additional user info to Firestore
-      await setDoc(doc(db, 'users', user.uid), {
-        name: formData.name,
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
-        phone: formData.phone,
-        role: 'user', // Default role
-        createdAt: new Date(),
+        password: formData.password,
+        options: {
+          data: {
+            name: formData.name,
+            phone: formData.phone
+          }
+        }
       });
 
+      if (signUpError) throw signUpError;
+
+      if (data.user) {
+        // Also insert profile in public table
+        const { error: profileError } = await supabase
+          .from('users')
+          .upsert({
+            id: data.user.id,
+            email: formData.email,
+            display_name: formData.name,
+            phone_number: formData.phone,
+            role: 'user'
+          });
+
+        if (profileError) {
+          console.warn('Profile write warning:', profileError);
+        }
+      }
+
+      localStorage.setItem('hasVisitedWelcome', 'true');
       navigate('/');
     } catch (err: any) {
       console.error('Registration error:', err);
