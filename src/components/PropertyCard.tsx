@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import React, { useState } from 'react';
 import { DarScoreBadge } from '@/components/DarScoreBadge';
 import { useApp } from '@/contexts/AppContext';
+import { useFavorites } from '@/context/FavoritesContext';
 
 interface PropertyCardProps {
   property: {
@@ -30,8 +31,9 @@ interface PropertyCardProps {
 const PropertyCard = ({ property, highlighted }: PropertyCardProps) => {
   const { t } = useTranslation();
   const { formatPrice } = useApp();
-  const [isFavorite, setIsFavorite] = useState(false);
+  const { isFavorite, toggleFavorite } = useFavorites();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const saved = isFavorite(property.id);
 
   const nextImage = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -122,11 +124,13 @@ const PropertyCard = ({ property, highlighted }: PropertyCardProps) => {
         <button
           onClick={(e) => {
             e.preventDefault();
-            setIsFavorite(!isFavorite);
+            e.stopPropagation();
+            toggleFavorite(property.id);
           }}
           className="absolute top-4 right-4 p-2 rounded-full bg-white/20 backdrop-blur-md hover:bg-white/40 transition-colors"
+          aria-label={saved ? 'Remove from favorites' : 'Add to favorites'}
         >
-          <Heart className={`w-5 h-5 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-white'}`} />
+          <Heart className={`w-5 h-5 ${saved ? 'fill-red-500 text-red-500' : 'text-white'}`} />
         </button>
       </div>
 

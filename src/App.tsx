@@ -6,6 +6,7 @@ import { I18nextProvider } from 'react-i18next';
 import i18n from '@/i18n';
 import { AuthProvider } from '@/context/AuthContext';
 import { PropertyProvider } from '@/context/PropertyContext';
+import { FavoritesProvider } from '@/context/FavoritesContext';
 import { AppProvider } from '@/contexts/AppContext';
 
 import Header from '@/sections/Header';
@@ -188,12 +189,14 @@ function App() {
     <I18nextProvider i18n={i18n}>
       <AppProvider>
         <AuthProvider>
-          <PropertyProvider>
-            <Router>
-              <AppRoutes />
-              <CookieConsent />
-            </Router>
-          </PropertyProvider>
+          <FavoritesProvider>
+            <PropertyProvider>
+              <Router>
+                <AppRoutes />
+                <CookieConsent />
+              </Router>
+            </PropertyProvider>
+          </FavoritesProvider>
         </AuthProvider>
       </AppProvider>
     </I18nextProvider>

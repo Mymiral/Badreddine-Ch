@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
-import { MapPin, BedDouble, Bath, Square, Share2, Heart, Printer, Phone, Mail, CheckCircle2, Calendar, Video, Mic } from 'lucide-react';
+import { MapPin, BedDouble, Bath, Square, Share2, Heart, Printer, Phone, Mail, CheckCircle2, Calendar, Video, Mic, Paintbrush } from 'lucide-react';
 import { supabase } from '@/supabase';
 import BackButton from '@/components/BackButton';
 
@@ -11,10 +11,12 @@ import { CommentsSection } from '@/components/CommentsSection';
 import PropertyMap from '@/components/PropertyMap';
 import { MortgageCalculator } from '@/components/MortgageCalculator';
 import { useApp } from '@/contexts/AppContext';
+import { VirtualStagingEditor } from '@/components/VirtualStagingEditor';
+import { useFavorites } from '@/context/FavoritesContext';
 
 const getVideoEmbedUrl = (url: string): string | null => {
   if (!url) return null;
-  
+
   // YouTube matches (including shorts, watch?v=, embed, youtu.be)
   const ytRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
   const ytMatch = url.match(ytRegex);
@@ -36,14 +38,15 @@ const PropertyDetail = () => {
   const { id } = useParams();
   const { t } = useTranslation();
   const { formatPrice, currency, setCurrency } = useApp();
+  const { isFavorite, toggleFavorite } = useFavorites();
   const [property, setProperty] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [agent, setAgent] = useState<any>(null);
   const [activeImage, setActiveImage] = useState(0);
-  const [isSaved, setIsSaved] = useState(false);
   const [showVisitModal, setShowVisitModal] = useState(false);
-  
+  const [showStaging, setShowStaging] = useState(false);
+
   useEffect(() => {
     const fetchAgent = async () => {
       if (!property?.agentId) return;
@@ -93,11 +96,8 @@ const PropertyDetail = () => {
     window.print();
   };
 
-  const toggleSave = () => {
-    setIsSaved(!isSaved);
-  };
-
   const embedUrl = property ? getVideoEmbedUrl(property.video) : null;
+  const saved = property ? isFavorite(property.id) : false;
 
   useEffect(() => {
     const fetchProperty = async () => {
@@ -181,9 +181,8 @@ const PropertyDetail = () => {
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8">
           <div>
             <div className="flex items-center gap-3 mb-4">
-              <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                property.type === 'sale' ? 'bg-brand-accent text-brand-primary' : 'bg-brand-secondary text-brand-white'
-              }`}>
+              <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${property.type === 'sale' ? 'bg-brand-accent text-brand-primary' : 'bg-brand-secondary text-brand-white'
+                }`}>
                 {property.type === 'sale' ? t('properties.sale') : t('properties.rent')}
               </span>
               <span className="bg-muted text-muted-foreground px-3 py-1 rounded-full text-xs font-medium">
@@ -198,23 +197,23 @@ const PropertyDetail = () => {
               <span className="text-lg">{property.location}</span>
             </div>
           </div>
-          
+
           <div className="flex flex-col md:items-end gap-4">
             <div className="flex flex-col md:items-end gap-2">
               <div className="flex items-center gap-2 mb-1">
-                <button 
+                <button
                   onClick={() => setCurrency('DZD')}
                   className={`text-xs px-2 py-1 rounded font-bold transition-colors ${currency === 'DZD' ? 'bg-brand-accent text-brand-primary' : 'bg-muted text-muted-foreground'}`}
                 >
                   DZD
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrency('EUR')}
                   className={`text-xs px-2 py-1 rounded font-bold transition-colors ${currency === 'EUR' ? 'bg-brand-accent text-brand-primary' : 'bg-muted text-muted-foreground'}`}
                 >
                   EUR
                 </button>
-                <button 
+                <button
                   onClick={() => setCurrency('USD')}
                   className={`text-xs px-2 py-1 rounded font-bold transition-colors ${currency === 'USD' ? 'bg-brand-accent text-brand-primary' : 'bg-muted text-muted-foreground'}`}
                 >
@@ -230,11 +229,12 @@ const PropertyDetail = () => {
               <button onClick={handleShare} className="p-2 rounded-full border border-border hover:bg-muted transition-colors text-muted-foreground">
                 <Share2 className="w-5 h-5" />
               </button>
-              <button 
-                onClick={toggleSave} 
-                className={`p-2 rounded-full border border-border transition-colors ${isSaved ? 'bg-red-500/10 text-red-500 border-red-200' : 'hover:bg-muted text-muted-foreground'}`}
+              <button
+                onClick={() => toggleFavorite(property.id)}
+                className={`p-2 rounded-full border border-border transition-colors ${saved ? 'bg-red-500/10 text-red-500 border-red-200' : 'hover:bg-muted text-muted-foreground'}`}
+                aria-label={saved ? 'Remove from favorites' : 'Add to favorites'}
               >
-                <Heart className={`w-5 h-5 ${isSaved ? 'fill-current' : ''}`} />
+                <Heart className={`w-5 h-5 ${saved ? 'fill-current' : ''}`} />
               </button>
               <button onClick={handlePrint} className="p-2 rounded-full border border-border hover:bg-muted transition-colors text-muted-foreground hidden md:flex">
                 <Printer className="w-5 h-5" />
@@ -259,8 +259,8 @@ const PropertyDetail = () => {
                   allowFullScreen
                 ></iframe>
               ) : (
-                <video 
-                  src={property.video} 
+                <video
+                  src={property.video}
                   controls
                   className="w-full h-full object-contain"
                 ></video>
@@ -271,21 +271,27 @@ const PropertyDetail = () => {
 
         {/* Image Gallery */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-12">
-          <div className="md:col-span-3 h-[400px] md:h-[600px] rounded-2xl overflow-hidden relative">
+          <div className="md:col-span-3 h-[400px] md:h-[600px] rounded-2xl overflow-hidden relative group">
             <img
               src={images[activeImage]}
               alt={property.title}
               className="w-full h-full object-cover"
             />
+            <button
+              onClick={() => setShowStaging(true)}
+              className="absolute bottom-4 right-4 bg-background/80 backdrop-blur-md text-foreground border border-border px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-brand-accent hover:text-brand-primary transition-all shadow-lg hover:scale-[1.02] cursor-pointer"
+            >
+              <Paintbrush className="w-4 h-4 text-brand-accent group-hover:text-brand-primary transition-colors" />
+              <span>Rénovation Virtuelle</span>
+            </button>
           </div>
           <div className="flex md:flex-col gap-4 overflow-x-auto md:overflow-y-auto h-32 md:h-[600px] pb-2 md:pb-0 hide-scrollbar">
             {images.map((img: string, index: number) => (
               <button
                 key={index}
                 onClick={() => setActiveImage(index)}
-                className={`flex-shrink-0 w-32 md:w-full h-full md:h-32 rounded-xl overflow-hidden border-2 transition-all ${
-                  activeImage === index ? 'border-brand-accent' : 'border-transparent opacity-70 hover:opacity-100'
-                }`}
+                className={`flex-shrink-0 w-32 md:w-full h-full md:h-32 rounded-xl overflow-hidden border-2 transition-all ${activeImage === index ? 'border-brand-accent' : 'border-transparent opacity-70 hover:opacity-100'
+                  }`}
               >
                 <img src={img} alt={`Thumbnail ${index + 1}`} className="w-full h-full object-cover" />
               </button>
@@ -381,9 +387,9 @@ const PropertyDetail = () => {
             {/* Map */}
             {property.lat && property.lng && (
               <section className="space-y-8 pt-8 border-t border-border">
-                <PropertyMap 
-                  coordinates={{ lat: property.lat, lng: property.lng }} 
-                  title={property.title} 
+                <PropertyMap
+                  coordinates={{ lat: property.lat, lng: property.lng }}
+                  title={property.title}
                   address={`${property.location}, ${property.city}`}
                 />
               </section>
@@ -401,7 +407,7 @@ const PropertyDetail = () => {
             {/* Contact Agent Card */}
             <div className="bg-card border border-border rounded-2xl p-6 shadow-sm sticky top-24">
               <h3 className="text-xl font-bold mb-6">{t('propertyDetail.agent')}</h3>
-              
+
               <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border">
                 <img
                   src={agent?.photoURL || "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80"}
@@ -463,7 +469,7 @@ const PropertyDetail = () => {
                 </button>
               </form>
             </div>
-            
+
             {/* Mortgage Calculator for Sales */}
             {property.type === 'sale' && (
               <MortgageCalculator propertyPrice={property.price} />
@@ -489,13 +495,13 @@ const PropertyDetail = () => {
               </div>
             </div>
             <div className="flex gap-4 mt-8">
-              <button 
+              <button
                 onClick={() => setShowVisitModal(false)}
                 className="flex-1 px-4 py-2 rounded-lg border border-border text-foreground hover:bg-muted font-bold transition-colors"
               >
                 Annuler
               </button>
-              <button 
+              <button
                 onClick={() => {
                   alert("Demande de visite envoyée !");
                   setShowVisitModal(false);
@@ -507,6 +513,14 @@ const PropertyDetail = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {showStaging && (
+        <VirtualStagingEditor
+          imageUrl={images[activeImage]}
+          onClose={() => setShowStaging(false)}
+          propertyName={property.title}
+        />
       )}
     </div>
   );

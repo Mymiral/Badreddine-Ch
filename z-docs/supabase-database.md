@@ -91,7 +91,31 @@ create policy "Users can delete their own properties" on public.properties
     select 1 from public.users where id = auth.uid() and role = 'admin'
   ));
 
--- 4. Create Alerts Table
+-- 4. Create Favorites Table
+create table public.favorites (
+  id uuid default uuid_generate_v4() primary key,
+  uid uuid not null references public.users(id) on delete cascade,
+  property_id uuid not null references public.properties(id) on delete cascade,
+  created_at timestamp with time zone default now(),
+  unique (uid, property_id)
+);
+
+-- Enable RLS for favorites
+alter table public.favorites enable row level security;
+
+create policy "Users can view their own favorites" on public.favorites
+  for select using (auth.uid() = uid);
+
+create policy "Users can add their own favorites" on public.favorites
+  for insert with check (auth.uid() = uid);
+
+create policy "Users can delete their own favorites" on public.favorites
+  for delete using (auth.uid() = uid);
+
+create index favorites_uid_idx on public.favorites(uid);
+create index favorites_property_id_idx on public.favorites(property_id);
+
+-- 5. Create Alerts Table
 create table public.alerts (
   id uuid default uuid_generate_v4() primary key,
   uid uuid references public.users(id) on delete cascade,
@@ -124,7 +148,7 @@ create policy "Users can delete their own alerts" on public.alerts
     select 1 from public.users where id = auth.uid() and role = 'admin'
   ));
 
--- 5. Create Comments Table
+-- 6. Create Comments Table
 create table public.comments (
   id uuid default uuid_generate_v4() primary key,
   property_id uuid references public.properties(id) on delete cascade,
@@ -151,7 +175,7 @@ create policy "Users can delete their comments" on public.comments
     select 1 from public.users where id = auth.uid() and role = 'admin'
   ));
 
--- 6. Create Ratings Table
+-- 7. Create Ratings Table
 create table public.ratings (
   id uuid default uuid_generate_v4() primary key,
   property_id uuid references public.properties(id) on delete cascade,
@@ -175,7 +199,7 @@ create policy "Users can delete their ratings" on public.ratings
     select 1 from public.users where id = auth.uid() and role = 'admin'
   ));
 
--- 7. Create Messages Table
+-- 8. Create Messages Table
 create table public.messages (
   id uuid default uuid_generate_v4() primary key,
   property_id uuid references public.properties(id) on delete cascade,
@@ -197,7 +221,7 @@ create policy "Only admin can view messages" on public.messages
 create policy "Anyone can insert messages" on public.messages
   for insert with check (true);
 
--- 8. Create Notifications Table
+-- 9. Create Notifications Table
 create table public.notifications (
   id uuid default uuid_generate_v4() primary key,
   uid uuid references public.users(id) on delete cascade,
