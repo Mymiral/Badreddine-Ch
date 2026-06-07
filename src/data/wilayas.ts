@@ -6568,6 +6568,157 @@ export const wilayas = [
         "name_fr": "Hassi Fehal"
       }
     ]
+  },
+  {
+    "code": "59",
+    "name_ar": "أفلو",
+    "name_fr": "Aflou",
+    "communes": [
+      { "name_ar": "أفلو", "name_fr": "Aflou" },
+      { "name_ar": "سبقاق", "name_fr": "Sebgag" },
+      { "name_ar": "سيدي بوزيد", "name_fr": "Sidi Bouzid" },
+      { "name_ar": "البيضاء", "name_fr": "El Beidha" },
+      { "name_ar": "قلتة سيدي سعد", "name_fr": "Gueltat Sidi Saad" },
+      { "name_ar": "بريدة", "name_fr": "Brida" },
+      { "name_ar": "الحاج مشري", "name_fr": "Hadj Mechri" },
+      { "name_ar": "تاويالة", "name_fr": "Taouiala" }
+    ]
+  },
+  {
+    "code": "60",
+    "name_ar": "بريكة",
+    "name_fr": "Barika",
+    "communes": [
+      { "name_ar": "بريكة", "name_fr": "Barika" },
+      { "name_ar": "بيطام", "name_fr": "Bitam" },
+      { "name_ar": "إمدوكل", "name_fr": "M'Doukal" },
+      { "name_ar": "عزيل عبد القادر", "name_fr": "Azil Abdelkader" },
+      { "name_ar": "الجزار", "name_fr": "Djezzar" },
+      { "name_ar": "أولاد عمار", "name_fr": "Ouled Ammar" }
+    ]
+  },
+  {
+    "code": "61",
+    "name_ar": "القنطرة",
+    "name_fr": "El Kantara",
+    "communes": [
+      { "name_ar": "القنطرة", "name_fr": "El Kantara" },
+      { "name_ar": "وطاية", "name_fr": "El Outaya" },
+      { "name_ar": "جمورة", "name_fr": "Djemorah" },
+      { "name_ar": "عين زعطوط", "name_fr": "Ain Zaatout" }
+    ]
+  },
+  {
+    "code": "62",
+    "name_ar": "بئر العاتر",
+    "name_fr": "Bir El Ater",
+    "communes": [
+      { "name_ar": "بئر العاتر", "name_fr": "Bir El Ater" },
+      { "name_ar": "نقارين", "name_fr": "Negrine" },
+      { "name_ar": "الماء الأبيض", "name_fr": "El Ma Labiodh" },
+      { "name_ar": "صفصاف الوسرى", "name_fr": "Safsaf El Ouesra" },
+      { "name_ar": "فركان", "name_fr": "Ferkane" }
+    ]
+  },
+  {
+    "code": "63",
+    "name_ar": "العريشة",
+    "name_fr": "El Aricha",
+    "communes": [
+      { "name_ar": "العريشة", "name_fr": "El Aricha" },
+      { "name_ar": "البويهي", "name_fr": "El Bouihi" },
+      { "name_ar": "سيدي الجيلالي", "name_fr": "Sidi Djilali" }
+    ]
+  },
+  {
+    "code": "64",
+    "name_ar": "قصر الشلالة",
+    "name_fr": "Ksar Chellala",
+    "communes": [
+      { "name_ar": "قصر الشلالة", "name_fr": "Ksar Chellala" },
+      { "name_ar": "سرغين", "name_fr": "Serghine" },
+      { "name_ar": "زمالة الأمير عبد القادر", "name_fr": "Zmalet El Emir Abdelkader" }
+    ]
+  },
+  {
+    "code": "65",
+    "name_ar": "عين وسارة",
+    "name_fr": "Aïn Oussara",
+    "communes": [
+      { "name_ar": "عين وسارة", "name_fr": "Ain Oussara" },
+      { "name_ar": "قرنيني", "name_fr": "Guernini" },
+      { "name_ar": "البيرين", "name_fr": "El Biring" },
+      { "name_ar": "بنهار", "name_fr": "Benhar" },
+      { "name_ar": "حد الصحاري", "name_fr": "Had Sahary" },
+      { "name_ar": "بويرة الأحداب", "name_fr": "Bouira Lahdab" }
+    ]
+  },
+  {
+    "code": "66",
+    "name_ar": "مسعد",
+    "name_fr": "Messaad",
+    "communes": [
+      { "name_ar": "مسعد", "name_fr": "Messaad" },
+      { "name_ar": "دلدول", "name_fr": "Deldoul" },
+      { "name_ar": "سلمانة", "name_fr": "Selmana" },
+      { "name_ar": "سد الرحال", "name_fr": "Sed Rahal" },
+      { "name_ar": "عمورة", "name_fr": "Amourah" },
+      { "name_ar": "فيض البطمة", "name_fr": "Faidh El Botma" }
+    ]
+  },
+  {
+    "code": "67",
+    "name_ar": "قصر البخاري",
+    "name_fr": "Ksar El Boukhari",
+    "communes": [
+      { "name_ar": "قصر البخاري", "name_fr": "Ksar El Boukhari" },
+      { "name_ar": "المفتاح", "name_fr": "El M'fatha" },
+      { "name_ar": "السانق", "name_fr": "Saneg" },
+      { "name_ar": "العمارية", "name_fr": "El Omaria" },
+      { "name_ar": "الربعية", "name_fr": "El Ouardia" }
+    ]
+  },
+  {
+    "code": "68",
+    "name_ar": "بوسعادة",
+    "name_fr": "Bou Saâda",
+    "communes": [
+      { "name_ar": "بوسعادة", "name_fr": "Bou Saada" },
+      { "name_ar": "الخبانة", "name_fr": "Khoubana" },
+      { "name_ar": "المسيف", "name_fr": "M'Cif" },
+      { "name_ar": "أولاد سيدي إبراهيم", "name_fr": "Ouled Sidi Brahim" },
+      { "name_ar": "سيدي عامر", "name_fr": "Sidi Ameur" },
+      { "name_ar": "تامسة", "name_fr": "Tamsa" },
+      { "name_ar": "بن سرور", "name_fr": "Ben Srour" },
+      { "name_ar": "أولاد سليمان", "name_fr": "Ouled Slimane" },
+      { "name_ar": "الحوامد", "name_fr": "El Houamed" },
+      { "name_ar": "الهامل", "name_fr": "El Hamel" },
+      { "name_ar": "زرزور", "name_fr": "Zarzour" },
+      { "name_ar": "محمد بوضياف", "name_fr": "Mohammed Boudiaf" },
+      { "name_ar": "بن زوح", "name_fr": "Benzouh" },
+      { "name_ar": "بئر فضة", "name_fr": "Bir Foda" },
+      { "name_ar": "عين فارس", "name_fr": "Ain Fares" },
+      { "name_ar": "سيدي محمد", "name_fr": "Sidi M'Hamed" },
+      { "name_ar": "منعة", "name_fr": "Menaa" },
+      { "name_ar": "عين الملح", "name_fr": "Ain El Melh" },
+      { "name_ar": "مجدل", "name_fr": "Medjedel" },
+      { "name_ar": "سليم", "name_fr": "Slim" },
+      { "name_ar": "عين الريش", "name_fr": "Ain Errich" },
+      { "name_ar": "ولتام", "name_fr": "Oulteme" },
+      { "name_ar": "جبل مسعد", "name_fr": "Djebel Messaad" }
+    ]
+  },
+  {
+    "code": "69",
+    "name_ar": "الأبيض سيدي الشيخ",
+    "name_fr": "El Abiodh Sidi Cheikh",
+    "communes": [
+      { "name_ar": "الأبيض سيدي الشيخ", "name_fr": "El Abiodh Sidi Cheikh" },
+      { "name_ar": "عين العراك", "name_fr": "Ain El Orak" },
+      { "name_ar": "البنود", "name_fr": "El Bounoud" },
+      { "name_ar": "شلالة", "name_fr": "Chellala" },
+      { "name_ar": "المحرة", "name_fr": "El Mehara" }
+    ]
   }
 ];
 

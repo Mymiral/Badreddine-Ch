@@ -270,6 +270,7 @@ const PublishProperty = () => {
       try {
         const { data: alertsData } = await supabase
           .from('alerts')
+          .select('*')
           .eq('active', true);
 
         if (alertsData) {

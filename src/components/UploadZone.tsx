@@ -82,13 +82,37 @@ export default function UploadZone({ files, setFiles }: UploadZoneProps) {
 
   const handleFiles = async (selectedFiles: FileList | null) => {
     if (!selectedFiles) return;
-    
-    if (!isOnline) {
-      alert("Pas de connexion internet — vos fichiers seront uploadés dès que vous serez connecté");
-      return;
+    // Note: we intentionally do NOT gate on `isOnline` here.
+    // navigator.onLine is unreliable on first SPA navigation and causes
+    // silent failures (returns early with no error shown). If the user is
+    // truly offline the upload will fail and surface a real error message.
+
+    const currentVideosCount = files.filter(f => f.file.type.startsWith('video/')).length;
+    let newVideosCount = 0;
+    const validFiles: File[] = [];
+
+    for (const file of Array.from(selectedFiles)) {
+      // 1. Max size check (20MB)
+      if (file.size > 20 * 1024 * 1024) {
+        alert(`Le fichier "${file.name}" dépasse la taille maximale de 20 Mo.`);
+        continue;
+      }
+
+      // 2. Max video count check (2 videos max)
+      if (file.type.startsWith('video/')) {
+        if (currentVideosCount + newVideosCount >= 2) {
+          alert("Vous ne pouvez pas ajouter plus de 2 vidéos.");
+          continue;
+        }
+        newVideosCount++;
+      }
+
+      validFiles.push(file);
     }
 
-    const newFiles = Array.from(selectedFiles).map((file) => ({
+    if (validFiles.length === 0) return;
+
+    const newFiles = validFiles.map((file) => ({
       id: Math.random().toString(36).substring(7),
       file,
       progress: 0,
@@ -226,7 +250,7 @@ export default function UploadZone({ files, setFiles }: UploadZoneProps) {
           Glissez-déposez vos fichiers ici ou cliquez pour parcourir
         </p>
         <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-          Zéro restrictions : Toutes tailles, tous formats acceptés ! Vos fichiers sont préservés à 100% dans leur qualité d'origine.
+          Taille max : 20 Mo par fichier. Limite : 2 vidéos maximum. Qualité préservée à 100% !
         </p>
         {!isOnline && (
           <p className="text-sm text-amber-500 mt-4 flex items-center justify-center gap-2">
@@ -254,13 +278,41 @@ export default function UploadZone({ files, setFiles }: UploadZoneProps) {
                         ? <span className="text-red-500">❌ {u.error || 'Failed'}</span>
                         : isSuccess
                           ? <span className="text-green-500 flex items-center gap-1">✅ Terminé</span>
-                          : <span className="flex items-center gap-1">🔄 {u.progress}% • {u.speed}</span>
+                          : (
+                            <span className="flex items-center gap-1.5 text-brand-accent font-semibold">
+                              <RotateCw className="w-3.5 h-3.5 animate-spin" />
+                              {u.file.type.startsWith('video/') && u.progress > 0 && u.progress < 50 ? (
+                                <span>Compression : {u.progress * 2}%</span>
+                              ) : u.file.type.startsWith('video/') && u.progress >= 50 ? (
+                                <span>Envoi : {Math.round((u.progress - 50) * 2)}%</span>
+                              ) : (
+                                <span>Envoi : {u.progress}%</span>
+                              )}
+                            </span>
+                          )
                       }
                     </span>
                   </div>
                   <div className="h-2.5 bg-muted rounded-full overflow-hidden w-full relative">
+                    <style dangerouslySetInnerHTML={{__html: `
+                      @keyframes progress-shimmer {
+                        0% { background-position: 200% 0; }
+                        100% { background-position: -200% 0; }
+                      }
+                      .animate-progress-shimmer {
+                        background: linear-gradient(90deg, #ec4899 25%, #f472b6 50%, #ec4899 75%);
+                        background-size: 200% 100%;
+                        animation: progress-shimmer 1.5s infinite linear;
+                      }
+                    `}} />
                     <div 
-                      className={`h-full absolute left-0 top-0 transition-all duration-300 rounded-full ${isError ? 'bg-red-500' : isSuccess ? 'bg-green-500' : 'bg-brand-accent'}`}
+                      className={`h-full absolute left-0 top-0 transition-all duration-300 rounded-full ${
+                        isError 
+                          ? 'bg-red-500' 
+                          : isSuccess 
+                            ? 'bg-green-500' 
+                            : 'animate-progress-shimmer'
+                      }`}
                       style={{ width: `${u.progress}%` }}
                     />
                   </div>
