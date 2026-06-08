@@ -179,8 +179,16 @@ const PublishProperty = () => {
       return;
     }
 
-    if (uploads.length > 0 && !uploads.every(u => u.status === 'success')) {
-      setError('Please wait for all uploads to finish before submitting.');
+    const hasUploading = uploads.some(u => u.status === 'uploading');
+    const hasError = uploads.some(u => u.status === 'error');
+
+    if (hasUploading) {
+      setError(t('publish.waitUploads', 'Veuillez attendre la fin du téléchargement de tous les fichiers avant de soumettre.'));
+      return;
+    }
+
+    if (hasError) {
+      setError(t('publish.uploadError', "Certains fichiers n'ont pas pu être téléchargés. Veuillez supprimer les fichiers en erreur ou réessayer l'envoi."));
       return;
     }
 

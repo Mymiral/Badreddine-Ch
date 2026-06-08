@@ -122,57 +122,55 @@ export default function UploadZone({ files, setFiles }: UploadZoneProps) {
 
     setFiles((prev) => [...prev, ...newFiles]);
 
-    await Promise.all(
-      newFiles.map(async (uploadItem) => {
-        let lastProgress = 0;
-        let lastTime = Date.now();
+    for (const uploadItem of newFiles) {
+      let lastProgress = 0;
+      let lastTime = Date.now();
 
-        try {
-          const url = await uploadFile(uploadItem.file, (progress) => {
-            const now = Date.now();
-            const timeDiff = (now - lastTime) / 1000;
-            let speedStr = uploadItem.speed;
-            
-            if (timeDiff > 0.5 && progress > lastProgress) {
-              const bytesDiff = (progress - lastProgress) * uploadItem.file.size / 100;
-              const mbps = bytesDiff / 1024 / 1024 / timeDiff;
-              speedStr = `${mbps.toFixed(2)} MB/s`;
-              lastProgress = progress;
-              lastTime = now;
-            }
-
-            setFiles((prev) =>
-              prev.map((f) =>
-                f.id === uploadItem.id
-                  ? { ...f, progress, speed: speedStr }
-                  : f
-              )
-            );
-          });
+      try {
+        const url = await uploadFile(uploadItem.file, (progress) => {
+          const now = Date.now();
+          const timeDiff = (now - lastTime) / 1000;
+          let speedStr = uploadItem.speed;
+          
+          if (timeDiff > 0.5 && progress > lastProgress) {
+            const bytesDiff = (progress - lastProgress) * uploadItem.file.size / 100;
+            const mbps = bytesDiff / 1024 / 1024 / timeDiff;
+            speedStr = `${mbps.toFixed(2)} MB/s`;
+            lastProgress = progress;
+            lastTime = now;
+          }
 
           setFiles((prev) =>
             prev.map((f) =>
               f.id === uploadItem.id
-                ? { ...f, status: 'success', progress: 100, url }
+                ? { ...f, progress, speed: speedStr }
                 : f
             )
           );
-        } catch (error: any) {
-          console.error("Upload failed", error);
-          setFiles((prev) =>
-            prev.map((f) =>
-              f.id === uploadItem.id
-                ? { 
-                    ...f, 
-                    status: 'error', 
-                    error: error.message || 'Error occurred'
-                  }
-                : f
-            )
-          );
-        }
-      })
-    );
+        });
+
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.id === uploadItem.id
+              ? { ...f, status: 'success', progress: 100, url }
+              : f
+          )
+        );
+      } catch (error: any) {
+        console.error("Upload failed", error);
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.id === uploadItem.id
+              ? { 
+                  ...f, 
+                  status: 'error', 
+                  error: error.message || 'Error occurred'
+                }
+              : f
+          )
+        );
+      }
+    }
   };
 
   const handleRetry = async (id: string) => {
