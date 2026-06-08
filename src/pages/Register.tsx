@@ -158,7 +158,7 @@ const Register = () => {
                   value={formData.phone}
                   onChange={handleChange}
                   className="block w-full pl-10 pr-3 py-3 border border-border rounded-lg bg-background focus:ring-2 focus:ring-brand-accent focus:border-brand-accent transition-all"
-                  placeholder="+213 555 12 34 56"
+                  placeholder="05 00 00 00 00"
                 />
               </div>
             </div>

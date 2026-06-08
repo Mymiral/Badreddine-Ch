@@ -19,7 +19,7 @@ const Agents = () => {
       experience: 8,
       properties: 45,
       rating: 4.9,
-      phone: '+213 555 123 456',
+      phone: '06 66 74 61 65',
       email: 'amine@darlinkdz.com'
     },
     {
@@ -31,7 +31,7 @@ const Agents = () => {
       experience: 5,
       properties: 32,
       rating: 4.8,
-      phone: '+213 555 987 654',
+      phone: '06 66 74 61 65',
       email: 'sarah@darlinkdz.com'
     },
     {
@@ -43,7 +43,7 @@ const Agents = () => {
       experience: 12,
       properties: 78,
       rating: 5.0,
-      phone: '+213 555 456 789',
+      phone: '06 66 74 61 65',
       email: 'karim@darlinkdz.com'
     },
     {
@@ -55,7 +55,7 @@ const Agents = () => {
       experience: 4,
       properties: 21,
       rating: 4.7,
-      phone: '+213 555 321 654',
+      phone: '06 66 74 61 65',
       email: 'leila@darlinkdz.com'
     }
   ];
@@ -116,7 +116,7 @@ const Agents = () => {
                   />
                 </div>
               </div>
-              
+
               <div className="p-6 pt-2 text-center">
                 <h3 className="text-2xl font-serif font-bold mb-1">{agent.name}</h3>
                 <div className="flex items-center justify-center gap-1 mb-2">
@@ -124,7 +124,7 @@ const Agents = () => {
                   <span className="text-sm font-bold text-brand-primary">{agent.rating}</span>
                 </div>
                 <p className="text-brand-accent text-sm font-medium mb-4">{agent.role}</p>
-                
+
                 <div className="space-y-3 mb-6">
                   <div className="flex items-center gap-3 text-sm text-muted-foreground">
                     <MapPin className="w-4 h-4 text-brand-accent" />
@@ -139,7 +139,7 @@ const Agents = () => {
                     <span>{agent.properties} {t('agents.properties')}</span>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-2 pt-4 border-t border-border">
                   <a
                     href={`tel:${agent.phone}`}

@@ -101,8 +101,8 @@ const PropertyCard = ({ property, highlighted }: PropertyCardProps) => {
         {/* Badges */}
         <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
           <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm ${property.type === 'sale'
-              ? 'bg-brand-accent text-brand-primary'
-              : 'bg-brand-secondary text-brand-white'
+            ? 'bg-brand-accent text-brand-primary'
+            : 'bg-brand-secondary text-brand-white'
             }`}>
             {property.type === 'sale' ? t('properties.sale') : t('properties.rent')}
           </span>
@@ -188,7 +188,7 @@ const PropertyCard = ({ property, highlighted }: PropertyCardProps) => {
             {t('properties.details')}
           </Link>
           <a
-            href={`https://wa.me/${property.agent?.phone || '213000000000'}?text=${encodeURIComponent(`Bonjour, je suis intéressé par votre annonce: ${property.title}`)}`}
+            href={`https://wa.me/${property.agent?.phone || '213666746165'}?text=${encodeURIComponent(`Bonjour, je suis intéressé par votre annonce: ${property.title}`)}`}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}

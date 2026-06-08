@@ -71,7 +71,7 @@ const Contact = () => {
           >
             <div className="bg-card border border-border rounded-2xl p-8 shadow-sm">
               <h3 className="text-2xl font-bold mb-6">{t('contact.info', 'Informations de contact')}</h3>
-              
+
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 rounded-full bg-brand-accent/20 flex items-center justify-center shrink-0">
@@ -79,7 +79,7 @@ const Contact = () => {
                   </div>
                   <div>
                     <h4 className="font-bold mb-1">{t('contact.address', 'Adresse')}</h4>
-                    <p className="text-muted-foreground">123 Rue Didouche Mourad<br />Alger Centre, Algérie</p>
+                    <p className="text-muted-foreground">Ain Temouchent, Ain Temouchent</p>
                   </div>
                 </div>
 
@@ -89,7 +89,7 @@ const Contact = () => {
                   </div>
                   <div>
                     <h4 className="font-bold mb-1">{t('contact.phone', 'Téléphone')}</h4>
-                    <p className="text-muted-foreground">+213 (0) 555 123 456<br />+213 (0) 21 12 34 56</p>
+                    <p className="text-muted-foreground">06 66 74 61 65</p>
                   </div>
                 </div>
 
@@ -133,7 +133,7 @@ const Contact = () => {
           >
             <div className="bg-card border border-border rounded-2xl p-8 md:p-10 shadow-sm">
               <h3 className="text-2xl font-bold mb-6">{t('contact.sendMessage', 'Envoyez-nous un message')}</h3>
-              
+
               {success && (
                 <div className="mb-8 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/50 rounded-xl flex items-center gap-3 text-green-700 dark:text-green-400">
                   <CheckCircle2 className="w-6 h-6 shrink-0" />
@@ -155,7 +155,7 @@ const Contact = () => {
                       placeholder={t('name_placeholder')}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <label className="text-sm font-medium">{t('contact.email', 'Email')} *</label>
                     <input
@@ -182,7 +182,7 @@ const Contact = () => {
                       placeholder={t('phone_placeholder')}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <label className="text-sm font-medium">{t('contact.subject', 'Sujet')} *</label>
                     <select
