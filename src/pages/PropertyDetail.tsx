@@ -390,7 +390,7 @@ const PropertyDetail = () => {
                 <PropertyMap
                   coordinates={{ lat: property.lat, lng: property.lng }}
                   title={property.title}
-                  address={`${property.location}, ${property.city}`}
+                  address={`${property.address}`}
                 />
               </section>
             )}

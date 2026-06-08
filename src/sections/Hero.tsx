@@ -21,7 +21,7 @@ const Hero = () => {
     if (searchParams.location) params.append('location', searchParams.location);
     if (searchParams.type) params.append('type', searchParams.type);
     if (searchParams.budget) params.append('budget', searchParams.budget);
-    
+
     navigate(`/properties?${params.toString()}`);
   };
 
@@ -88,7 +88,7 @@ const Hero = () => {
                   <MapPin className="w-4 h-4 text-brand-accent" />
                   {t('hero.search.location')}
                 </label>
-                <LiveSearchBar 
+                <LiveSearchBar
                   initialValue={searchParams.location}
                   onSearch={(val, selection) => {
                     const newParams = { ...searchParams, location: val };
@@ -134,7 +134,7 @@ const Hero = () => {
               {/* Budget */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-white flex items-center gap-2">
-                  <DollarSign className="w-4 h-4 text-brand-accent" />
+                  <span className="w-4 h-4 text-brand-accent mr-4">Dzd</span>
                   {t('hero.search.budget')}
                 </label>
                 <select

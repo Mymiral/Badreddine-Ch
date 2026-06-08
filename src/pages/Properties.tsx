@@ -95,7 +95,7 @@ const Properties = () => {
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFilters(prev => ({ ...prev, [name]: value }));
-    
+
     // Update URL params
     if (value) {
       searchParams.set(name, value);
@@ -120,10 +120,10 @@ const Properties = () => {
     setFilters(prev => ({ ...prev, wilaya, commune }));
     if (wilaya) searchParams.set('wilaya', wilaya);
     else searchParams.delete('wilaya');
-    
+
     if (commune) searchParams.set('commune', commune);
     else searchParams.delete('commune');
-    
+
     setSearchParams(searchParams);
   };
 
@@ -155,7 +155,7 @@ const Properties = () => {
               {filteredProperties.length} {t('agents.properties')} {t('common.found', 'trouvées')}
             </p>
           </div>
-          
+
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowAlertModal(true)}
@@ -180,7 +180,7 @@ const Properties = () => {
                 {t('common.map', 'Carte Interactive')}
               </button>
             </div>
-            
+
             <button
               onClick={() => setShowFilters(!showFilters)}
               className="flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-lg hover:bg-muted transition-colors md:hidden"
@@ -192,16 +192,16 @@ const Properties = () => {
         </div>
 
         {viewMode === 'map' && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             className="mb-8"
           >
-            <AlgeriaMapFilter 
-              properties={properties} 
-              selectedWilaya={filters.wilaya} 
-              onWilayaSelect={handleWilayaSelect} 
+            <AlgeriaMapFilter
+              properties={properties}
+              selectedWilaya={filters.wilaya}
+              onWilayaSelect={handleWilayaSelect}
             />
           </motion.div>
         )}
@@ -227,11 +227,11 @@ const Properties = () => {
                 {/* Location */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">{t('publish.location', 'Location')}</label>
-                  <LiveSearchBar 
+                  <LiveSearchBar
                     initialValue={filters.location}
                     onSearch={(val, selection) => {
                       const newFilters = { ...filters, location: val };
-                      
+
                       if (!val) {
                         newFilters.wilaya = '';
                         newFilters.commune = '';
@@ -254,7 +254,7 @@ const Properties = () => {
                           }
                         }
                       }
-                      
+
                       setFilters(newFilters);
                       setSearchParams(searchParams);
                     }}
@@ -423,7 +423,7 @@ const Properties = () => {
           </div>
         </div>
       </div>
-      
+
       {showAlertModal && (
         <AlertModal onClose={() => setShowAlertModal(false)} />
       )}

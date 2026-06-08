@@ -47,10 +47,10 @@ const PropertyCard = ({ property, highlighted }: PropertyCardProps) => {
     setCurrentImageIndex((prev) => (prev - 1 + (property.images.length || 1)) % (property.images.length || 1));
   };
 
-  const images = property.images && property.images.length > 0 
-    ? property.images 
-    : (property as any).image 
-      ? [(property as any).image] 
+  const images = property.images && property.images.length > 0
+    ? property.images
+    : (property as any).image
+      ? [(property as any).image]
       : ['https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'];
 
   return (
@@ -72,16 +72,16 @@ const PropertyCard = ({ property, highlighted }: PropertyCardProps) => {
             className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
           />
         </AnimatePresence>
-        
+
         {images.length > 1 && (
           <>
-            <button 
+            <button
               onClick={prevImage}
               className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center opacity-0 group-hover/carousel:opacity-100 transition-opacity hover:bg-black/70 z-10"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
-            <button 
+            <button
               onClick={nextImage}
               className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center opacity-0 group-hover/carousel:opacity-100 transition-opacity hover:bg-black/70 z-10"
             >
@@ -89,22 +89,21 @@ const PropertyCard = ({ property, highlighted }: PropertyCardProps) => {
             </button>
             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
               {images.map((_, idx) => (
-                <div 
-                  key={idx} 
+                <div
+                  key={idx}
                   className={`w-1.5 h-1.5 rounded-full transition-all ${idx === currentImageIndex ? 'bg-white scale-125' : 'bg-white/50'}`}
                 />
               ))}
             </div>
           </>
         )}
-        
+
         {/* Badges */}
         <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
-          <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm ${
-            property.type === 'sale' 
-              ? 'bg-brand-accent text-brand-primary' 
+          <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm ${property.type === 'sale'
+              ? 'bg-brand-accent text-brand-primary'
               : 'bg-brand-secondary text-brand-white'
-          }`}>
+            }`}>
             {property.type === 'sale' ? t('properties.sale') : t('properties.rent')}
           </span>
           {property.featured && (
@@ -137,7 +136,7 @@ const PropertyCard = ({ property, highlighted }: PropertyCardProps) => {
       <div className="p-6">
         <div className="flex items-center gap-2 text-muted-foreground text-sm mb-3">
           <MapPin className="w-4 h-4 text-brand-accent" />
-          <span className="truncate">{property.location}</span>
+          <span className="truncate">{property.address}</span>
         </div>
 
         <h3 className="text-xl font-bold text-foreground mb-2 line-clamp-1 group-hover:text-brand-accent transition-colors">
@@ -188,8 +187,8 @@ const PropertyCard = ({ property, highlighted }: PropertyCardProps) => {
           >
             {t('properties.details')}
           </Link>
-          <a 
-            href={`https://wa.me/${property.agent?.phone || '213000000000'}?text=${encodeURIComponent(`Bonjour, je suis intéressé par votre annonce: ${property.title}`)}`} 
+          <a
+            href={`https://wa.me/${property.agent?.phone || '213000000000'}?text=${encodeURIComponent(`Bonjour, je suis intéressé par votre annonce: ${property.title}`)}`}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}

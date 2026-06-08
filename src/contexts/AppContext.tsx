@@ -28,6 +28,22 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setLanguageState(lang);
   };
 
+  const formatDzdPrice = (price: number, localeStr: string) => {
+    if (price >= 1_000_000_000) {
+      return `${new Intl.NumberFormat('fr-DZ', { maximumFractionDigits: 2 }).format(price / 1_000_000_000)} milliard DZD`;
+    }
+
+    if (price >= 1_000_000) {
+      return `${new Intl.NumberFormat('fr-DZ', { maximumFractionDigits: 2 }).format(price / 1_000_000)} million DZD`;
+    }
+
+    return new Intl.NumberFormat(localeStr, {
+      style: 'currency',
+      currency: 'DZD',
+      maximumFractionDigits: 0,
+    }).format(price);
+  };
+
   const formatPrice = (price: number) => {
     const eurExchangeRate = 240;
     const usdExchangeRate = 220;
@@ -52,11 +68,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       }).format(price / usdExchangeRate);
     }
 
-    return new Intl.NumberFormat(localeStr, {
-      style: 'currency',
-      currency: 'DZD',
-      maximumFractionDigits: 0,
-    }).format(price);
+    return formatDzdPrice(price, localeStr);
   };
 
   return (

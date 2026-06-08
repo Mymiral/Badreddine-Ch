@@ -11,6 +11,24 @@ import UploadZone, { UploadedFile } from '@/components/UploadZone';
 import { supabase } from '@/supabase';
 import { uploadFile } from '@/lib/upload';
 
+const formatDzdPricePreview = (value: string) => {
+  const price = Number(value);
+
+  if (!value || Number.isNaN(price)) return '';
+
+  const formattedNumber = new Intl.NumberFormat('fr-DZ', { maximumFractionDigits: 0 }).format(price);
+
+  if (price >= 1_000_000_000) {
+    return `${new Intl.NumberFormat('fr-DZ', { maximumFractionDigits: 2 }).format(price / 1_000_000_000)} milliard DZD`;
+  }
+
+  if (price >= 1_000_000) {
+    return `${new Intl.NumberFormat('fr-DZ', { maximumFractionDigits: 2 }).format(price / 1_000_000)} million DZD`;
+  }
+
+  return `${formattedNumber} DZD`;
+};
+
 const PublishProperty = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -45,6 +63,7 @@ const PublishProperty = () => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<BlobPart[]>([]);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const pricePreview = formatDzdPricePreview(formData.price);
 
   useEffect(() => {
     if (!editId || !user) return;
@@ -133,13 +152,13 @@ const PublishProperty = () => {
       const recorder = new MediaRecorder(stream);
       audioChunksRef.current = [];
       setRecordingTime(0);
-      
+
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
           audioChunksRef.current.push(e.data);
         }
       };
-      
+
       recorder.onstop = () => {
         const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         const reader = new FileReader();
@@ -149,7 +168,7 @@ const PublishProperty = () => {
         };
         stream.getTracks().forEach(track => track.stop());
       };
-      
+
       recorder.start();
       mediaRecorderRef.current = recorder;
       setIsRecording(true);
@@ -199,7 +218,7 @@ const PublishProperty = () => {
       // 1. Collect URLs (images vs video)
       const mediaUrls: string[] = [];
       let videoUrl: string | null = null;
-      
+
       uploads.forEach(u => {
         if (u.url) {
           if (u.file.type.startsWith('video/')) {
@@ -220,55 +239,55 @@ const PublishProperty = () => {
         uploadedAudioUrl = formData.audio;
       }
       // 2. Save Announcement to Supabase properties table
-      const dbQuery = editId 
+      const dbQuery = editId
         ? supabase
-            .from('properties')
-            .update({
-              title: formData.title,
-              description: formData.description,
-              type: formData.type,
-              property_type: formData.propertyType,
-              price: Number(formData.price),
-              area: Number(formData.area),
-              bedrooms: Number(formData.bedrooms),
-              bathrooms: Number(formData.bathrooms),
-              city: formData.city,
-              location: formData.location,
-              address: formData.address,
-              lat: mapPosition?.lat || null,
-              lng: mapPosition?.lng || null,
-              images: mediaUrls,
-              video: videoUrl || formData.video,
-              audio: uploadedAudioUrl,
-              status: 'available'
-            })
-            .eq('id', editId)
+          .from('properties')
+          .update({
+            title: formData.title,
+            description: formData.description,
+            type: formData.type,
+            property_type: formData.propertyType,
+            price: Number(formData.price),
+            area: Number(formData.area),
+            bedrooms: Number(formData.bedrooms),
+            bathrooms: Number(formData.bathrooms),
+            city: formData.city,
+            location: formData.location,
+            address: formData.address,
+            lat: mapPosition?.lat || null,
+            lng: mapPosition?.lng || null,
+            images: mediaUrls,
+            video: videoUrl || formData.video,
+            audio: uploadedAudioUrl,
+            status: 'available'
+          })
+          .eq('id', editId)
         : supabase
-            .from('properties')
-            .insert([{
-              title: formData.title,
-              description: formData.description,
-              type: formData.type,
-              property_type: formData.propertyType,
-              price: Number(formData.price),
-              area: Number(formData.area),
-              bedrooms: Number(formData.bedrooms),
-              bathrooms: Number(formData.bathrooms),
-              city: formData.city,
-              location: formData.location,
-              address: formData.address,
-              lat: mapPosition?.lat || null,
-              lng: mapPosition?.lng || null,
-              images: mediaUrls,
-              video: videoUrl || formData.video,
-              audio: uploadedAudioUrl,
-              agent_id: user.uid,
-              featured: false,
-              status: 'available'
-            }]);
+          .from('properties')
+          .insert([{
+            title: formData.title,
+            description: formData.description,
+            type: formData.type,
+            property_type: formData.propertyType,
+            price: Number(formData.price),
+            area: Number(formData.area),
+            bedrooms: Number(formData.bedrooms),
+            bathrooms: Number(formData.bathrooms),
+            city: formData.city,
+            location: formData.location,
+            address: formData.address,
+            lat: mapPosition?.lat || null,
+            lng: mapPosition?.lng || null,
+            images: mediaUrls,
+            video: videoUrl || formData.video,
+            audio: uploadedAudioUrl,
+            agent_id: user.uid,
+            featured: false,
+            status: 'available'
+          }]);
 
       const { data: supaData, error: supaError } = await dbQuery.select().single();
-      
+
       if (supaError) {
         console.error("Supabase Save Error:", supaError);
         throw new Error(supaError.message || JSON.stringify(supaError));
@@ -288,7 +307,7 @@ const PublishProperty = () => {
             // Compare budget string or convert it if it has range/number
             const maxBudget = parseFloat(alert.budget || '0');
             const matchBudget = !maxBudget || Number(formData.price) <= maxBudget;
-            
+
             if (matchType && matchWilaya && matchBudget) {
               await supabase.from('notifications').insert([{
                 uid: alert.uid,
@@ -364,7 +383,7 @@ const PublishProperty = () => {
               <Home className="w-6 h-6 text-brand-accent" />
               {t('publish.basicInfo')}
             </h2>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="md:col-span-2 space-y-2">
                 <label className="text-sm font-medium">{t('publish.propertyTitle')} *</label>
@@ -382,9 +401,8 @@ const PublishProperty = () => {
               <div className="space-y-2">
                 <label className="text-sm font-medium">{t('publish.transactionType')} *</label>
                 <div className="grid grid-cols-2 gap-4">
-                  <label className={`flex items-center justify-center p-3 border rounded-lg cursor-pointer transition-all ${
-                    formData.type === 'sale' ? 'border-brand-accent bg-brand-accent/10 text-brand-primary font-medium' : 'border-border hover:bg-muted'
-                  }`}>
+                  <label className={`flex items-center justify-center p-3 border rounded-lg cursor-pointer transition-all ${formData.type === 'sale' ? 'border-brand-accent bg-brand-accent/10 text-brand-primary font-medium' : 'border-border hover:bg-muted'
+                    }`}>
                     <input
                       type="radio"
                       name="type"
@@ -395,9 +413,8 @@ const PublishProperty = () => {
                     />
                     {t('publish.sale')}
                   </label>
-                  <label className={`flex items-center justify-center p-3 border rounded-lg cursor-pointer transition-all ${
-                    formData.type === 'rent' ? 'border-brand-secondary bg-brand-secondary/10 text-brand-white font-medium' : 'border-border hover:bg-muted'
-                  }`}>
+                  <label className={`flex items-center justify-center p-3 border rounded-lg cursor-pointer transition-all ${formData.type === 'rent' ? 'border-brand-secondary bg-brand-secondary/10 text-brand-white font-medium' : 'border-border hover:bg-muted'
+                    }`}>
                     <input
                       type="radio"
                       name="type"
@@ -432,7 +449,7 @@ const PublishProperty = () => {
               <div className="space-y-2">
                 <label className="text-sm font-medium">{t('publish.price')} (DZD) *</label>
                 <div className="relative">
-                  <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <span className="absolute left-4 top-[23px] -translate-y-1/2 w-5 h-5 text-muted-foreground">Dzd</span>
                   <input
                     type="number"
                     name="price"
@@ -440,10 +457,15 @@ const PublishProperty = () => {
                     min="0"
                     value={formData.price}
                     onChange={handleInputChange}
-                    className="w-full pl-12 pr-4 py-3 rounded-lg border border-border bg-background focus:ring-2 focus:ring-brand-accent transition-all"
+                    className="w-full pl-14 pr-4 py-3 rounded-lg border border-border bg-background focus:ring-2 focus:ring-brand-accent transition-all"
                     placeholder={t('price_placeholder')}
                   />
                 </div>
+                {pricePreview && (
+                  <p className="text-sm text-muted-foreground">
+                    Preview: <span className="font-medium text-foreground">{pricePreview}</span>
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -485,7 +507,7 @@ const PublishProperty = () => {
               {t('publish.location')}
             </h2>
             <div className="space-y-6">
-              <LocationSelector 
+              <LocationSelector
                 initialWilaya={formData.city}
                 initialCommune={formData.location}
                 onLocationChange={({ wilaya, commune }) => {
@@ -525,7 +547,7 @@ const PublishProperty = () => {
               <CheckCircle2 className="w-6 h-6 text-brand-accent" />
               {t('publish.features')}
             </h2>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               <div className="space-y-2">
                 <label className="text-sm font-medium">{t('publish.bedrooms')} *</label>
@@ -563,20 +585,20 @@ const PublishProperty = () => {
               <Upload className="w-6 h-6 text-brand-accent" />
               {t('publish.media')}
             </h2>
-                        <div className="space-y-6">
+            <div className="space-y-6">
               <UploadZone files={uploads} setFiles={setUploads} />
 
               <div className="space-y-2 pt-6 border-t border-border">
                 <label className="text-sm font-medium flex items-center mb-2">
                   <Video className="w-4 h-4 mr-2 text-brand-accent" /> {t('publish.videoUrl', 'Lien Vidéo (YouTube, etc.)')}
                 </label>
-                <input 
-                  type="url" 
+                <input
+                  type="url"
                   name="video"
-                  placeholder={t('video_url_placeholder', 'https://youtube.com/...')} 
+                  placeholder={t('video_url_placeholder', 'https://youtube.com/...')}
                   value={formData.video}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:ring-2 focus:ring-brand-accent transition-all" 
+                  className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:ring-2 focus:ring-brand-accent transition-all"
                 />
               </div>
 
@@ -588,9 +610,9 @@ const PublishProperty = () => {
                 {formData.audio ? (
                   <div className="flex items-center gap-4 bg-muted/50 p-4 rounded-lg border border-border">
                     <audio src={formData.audio} controls className="h-10 flex-1" />
-                    <button 
-                      type="button" 
-                      onClick={() => setFormData({...formData, audio: ''})} 
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, audio: '' })}
                       className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
                     >
                       <X className="h-5 w-5" />
@@ -601,11 +623,10 @@ const PublishProperty = () => {
                     <button
                       type="button"
                       onClick={isRecording ? stopRecording : startRecording}
-                      className={`flex items-center gap-2 px-6 py-3 rounded-lg border transition-all ${
-                        isRecording 
-                          ? 'bg-red-500/10 border-red-500 text-red-500' 
-                          : 'border-border hover:bg-muted text-foreground'
-                      }`}
+                      className={`flex items-center gap-2 px-6 py-3 rounded-lg border transition-all ${isRecording
+                        ? 'bg-red-500/10 border-red-500 text-red-500'
+                        : 'border-border hover:bg-muted text-foreground'
+                        }`}
                     >
                       {isRecording ? (
                         <>

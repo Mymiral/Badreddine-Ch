@@ -17,7 +17,7 @@ export default function CreatePropertyModal({ onClose }: CreatePropertyModalProp
   const { t } = useTranslation();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  
+
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<BlobPart[]>([]);
@@ -58,14 +58,14 @@ export default function CreatePropertyModal({ onClose }: CreatePropertyModalProp
     setLoading(true);
     try {
       const validImages = formData.images.filter(img => img.trim() !== '');
-      
+
       const uploadPromises = validImages.map(async (dataUrl, index) => {
         const response = await fetch(dataUrl);
         const blob = await response.blob();
         const file = new File([blob], `image_${index}.jpg`, { type: 'image/jpeg' });
         return uploadFile(file);
       });
-      
+
       const uploadedImageUrls = await Promise.all(uploadPromises);
 
       let uploadedAudioUrl = '';
@@ -77,7 +77,7 @@ export default function CreatePropertyModal({ onClose }: CreatePropertyModalProp
       } else {
         uploadedAudioUrl = formData.audio;
       }
-      
+
       const { error: supabaseError } = await supabase
         .from('properties')
         .insert([{
@@ -144,7 +144,7 @@ export default function CreatePropertyModal({ onClose }: CreatePropertyModalProp
           const ctx = canvas.getContext('2d');
           ctx?.drawImage(img, 0, 0, width, height);
           const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-          
+
           setFormData(prev => ({
             ...prev,
             images: [...prev.images, dataUrl]
@@ -166,13 +166,13 @@ export default function CreatePropertyModal({ onClose }: CreatePropertyModalProp
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
       audioChunksRef.current = [];
-      
+
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
           audioChunksRef.current.push(e.data);
         }
       };
-      
+
       recorder.onstop = () => {
         const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         const reader = new FileReader();
@@ -182,7 +182,7 @@ export default function CreatePropertyModal({ onClose }: CreatePropertyModalProp
         };
         stream.getTracks().forEach(track => track.stop());
       };
-      
+
       recorder.start();
       mediaRecorderRef.current = recorder;
       setIsRecording(true);
@@ -208,18 +208,18 @@ export default function CreatePropertyModal({ onClose }: CreatePropertyModalProp
   }, [onClose]);
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6"
       onClick={onClose}
     >
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.3 }}
-        className="absolute inset-0 bg-[#050a1a]/80 backdrop-blur-md" 
+        className="absolute inset-0 bg-[#050a1a]/80 backdrop-blur-md"
       />
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -246,20 +246,20 @@ export default function CreatePropertyModal({ onClose }: CreatePropertyModalProp
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-medium text-white/90">{t('listing_title')}</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 required
-                placeholder={t('listing_title_placeholder')} 
+                placeholder={t('listing_title_placeholder')}
                 value={formData.title}
-                onChange={(e) => setFormData({...formData, title: e.target.value})}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-primary transition-colors" 
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-primary transition-colors"
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-white/90">{t('property_type')}</label>
-              <select 
+              <select
                 value={formData.propertyType}
-                onChange={(e) => setFormData({...formData, propertyType: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, propertyType: e.target.value })}
                 className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-primary transition-colors appearance-none"
               >
                 <option className="bg-[#0a1229]" value="Villa">{t('villa')}</option>
@@ -274,9 +274,9 @@ export default function CreatePropertyModal({ onClose }: CreatePropertyModalProp
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-medium text-white/90">Transaction</label>
-              <select 
+              <select
                 value={formData.type}
-                onChange={(e) => setFormData({...formData, type: e.target.value as 'sale' | 'rent'})}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value as 'sale' | 'rent' })}
                 className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-primary transition-colors appearance-none"
               >
                 <option className="bg-[#0a1229]" value="sale">{t('properties.sale')}</option>
@@ -285,15 +285,16 @@ export default function CreatePropertyModal({ onClose }: CreatePropertyModalProp
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium flex items-center text-white/90">
-                <DollarSign className="h-4 w-4 mr-1 text-primary" /> {t('price')} (DZD)
+                <span className="h-4 w-4 mr-1 text-primary">Dzd</span>
+                {t('price')} (DZD)
               </label>
-              <input 
-                type="number" 
+              <input
+                type="number"
                 required
-                placeholder={t('price_placeholder')} 
+                placeholder={t('price_placeholder')}
                 value={formData.price}
-                onChange={(e) => setFormData({...formData, price: Number(e.target.value)})}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-primary transition-colors" 
+                onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-primary transition-colors"
               />
             </div>
           </div>
@@ -303,23 +304,23 @@ export default function CreatePropertyModal({ onClose }: CreatePropertyModalProp
               <label className="text-sm font-medium flex items-center text-white/90">
                 <MapPin className="h-4 w-4 mr-1 text-primary" /> {t('publish.location')}
               </label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 required
-                placeholder={t('address_placeholder')} 
+                placeholder={t('address_placeholder')}
                 value={formData.location}
-                onChange={(e) => setFormData({...formData, location: e.target.value})}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-primary transition-colors" 
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-primary transition-colors"
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-white/90">Ville / Commune</label>
-              <input 
-                type="text" 
-                placeholder="Ex: Alger, Oran..." 
+              <input
+                type="text"
+                placeholder="Ex: Alger, Oran..."
                 value={formData.city}
-                onChange={(e) => setFormData({...formData, city: e.target.value})}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-primary transition-colors" 
+                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-primary transition-colors"
               />
             </div>
           </div>
@@ -329,55 +330,55 @@ export default function CreatePropertyModal({ onClose }: CreatePropertyModalProp
               <label className="text-sm font-medium flex items-center text-white/90">
                 <Bed className="h-4 w-4 mr-1 text-primary" /> {t('publish.bedrooms')}
               </label>
-              <input 
-                type="number" 
+              <input
+                type="number"
                 required
                 value={formData.bedrooms}
-                onChange={(e) => setFormData({...formData, bedrooms: parseInt(e.target.value)})}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-primary transition-colors" 
+                onChange={(e) => setFormData({ ...formData, bedrooms: parseInt(e.target.value) })}
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-primary transition-colors"
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium flex items-center text-white/90">
                 <Bath className="h-4 w-4 mr-1 text-primary" /> {t('publish.bathrooms')}
               </label>
-              <input 
-                type="number" 
+              <input
+                type="number"
                 required
                 value={formData.bathrooms}
-                onChange={(e) => setFormData({...formData, bathrooms: parseInt(e.target.value)})}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-primary transition-colors" 
+                onChange={(e) => setFormData({ ...formData, bathrooms: parseInt(e.target.value) })}
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-primary transition-colors"
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium flex items-center text-white/90">
                 <Maximize className="h-4 w-4 mr-1 text-primary" /> {t('surface')}
               </label>
-              <input 
-                type="number" 
+              <input
+                type="number"
                 required
                 value={formData.area}
-                onChange={(e) => setFormData({...formData, area: parseInt(e.target.value)})}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-primary transition-colors" 
+                onChange={(e) => setFormData({ ...formData, area: parseInt(e.target.value) })}
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-primary transition-colors"
               />
             </div>
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-white/90">{t('description')}</label>
-            <textarea 
+            <textarea
               rows={4}
               required
               placeholder={t('description_placeholder')}
               value={formData.description}
-              onChange={(e) => setFormData({...formData, description: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-primary transition-colors resize-none"
             />
           </div>
 
           {/* Media Section */}
           <div className="space-y-6 pt-4 border-t border-white/10">
-            
+
             {/* Images */}
             <div className="space-y-3">
               <label className="text-sm font-medium flex items-center text-white/90">
@@ -387,8 +388,8 @@ export default function CreatePropertyModal({ onClose }: CreatePropertyModalProp
                 {formData.images.map((img, index) => (
                   <div key={index} className="relative w-24 h-24 rounded-lg overflow-hidden border border-white/10 group">
                     <img src={img} alt="upload" className="w-full h-full object-cover" />
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => handleRemoveImage(index)}
                       className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                     >
@@ -409,12 +410,12 @@ export default function CreatePropertyModal({ onClose }: CreatePropertyModalProp
               <label className="text-sm font-medium flex items-center text-white/90">
                 <Video className="h-4 w-4 mr-2 text-primary" /> {l.videoUrl}
               </label>
-              <input 
-                type="url" 
-                placeholder="https://..." 
+              <input
+                type="url"
+                placeholder="https://..."
                 value={formData.video}
-                onChange={(e) => setFormData({...formData, video: e.target.value})}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-primary transition-colors" 
+                onChange={(e) => setFormData({ ...formData, video: e.target.value })}
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-primary transition-colors"
               />
             </div>
 
@@ -426,13 +427,13 @@ export default function CreatePropertyModal({ onClose }: CreatePropertyModalProp
               {formData.audio ? (
                 <div className="flex items-center gap-3 bg-white/5 p-3 rounded-lg border border-white/10">
                   <audio src={formData.audio} controls className="h-8 flex-1" />
-                  <button type="button" onClick={() => setFormData({...formData, audio: ''})} className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors">
+                  <button type="button" onClick={() => setFormData({ ...formData, audio: '' })} className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors">
                     <Trash2 className="h-5 w-5" />
                   </button>
                 </div>
               ) : (
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={isRecording ? stopRecording : startRecording}
                   className={`flex items-center justify-center w-full py-4 rounded-lg border transition-all ${isRecording ? 'bg-red-500/10 border-red-500 text-red-500 animate-pulse' : 'bg-white/5 border-white/10 text-white/80 hover:border-primary hover:text-primary'}`}
                 >
@@ -447,16 +448,16 @@ export default function CreatePropertyModal({ onClose }: CreatePropertyModalProp
           </div>
 
           <div className="flex gap-4 pt-6 border-t border-white/10">
-            <button 
-              type="button" 
-              onClick={onClose} 
+            <button
+              type="button"
+              onClick={onClose}
               className="flex-1 py-4 rounded-xl font-bold border border-white/10 text-white/70 hover:text-white hover:bg-white/5 transition-all"
             >
               {l.cancel}
             </button>
-            <button 
-              type="submit" 
-              disabled={loading} 
+            <button
+              type="submit"
+              disabled={loading}
               className="flex-1 btn-luxury py-4 flex items-center justify-center rounded-xl"
             >
               <Send className={`h-5 w-5 mr-2 ${loading ? 'animate-spin' : ''}`} />

@@ -28,7 +28,7 @@ function FilePreview({ file, url }: { file: File; url?: string }) {
     if (!file) return;
     const isImage = file.type.startsWith('image/');
     const isVideo = file.type.startsWith('video/');
-    
+
     if (isImage || isVideo) {
       const objectUrl = URL.createObjectURL(file);
       setPreviewUrl(objectUrl);
@@ -40,27 +40,27 @@ function FilePreview({ file, url }: { file: File; url?: string }) {
 
   if (!previewUrl) return null;
 
-  const isVideo = file.type.startsWith('video/') || 
-                  previewUrl.toLowerCase().includes('.mp4') || 
-                  previewUrl.toLowerCase().includes('.mov') || 
-                  previewUrl.toLowerCase().includes('.webm');
+  const isVideo = file.type.startsWith('video/') ||
+    previewUrl.toLowerCase().includes('.mp4') ||
+    previewUrl.toLowerCase().includes('.mov') ||
+    previewUrl.toLowerCase().includes('.webm');
 
   if (isVideo) {
     return (
-      <video 
-        src={previewUrl} 
-        className="w-12 h-12 rounded-lg object-cover bg-muted shrink-0" 
-        muted 
+      <video
+        src={previewUrl}
+        className="w-12 h-12 rounded-lg object-cover bg-muted shrink-0"
+        muted
         playsInline
       />
     );
   }
 
   return (
-    <img 
-      src={previewUrl} 
-      alt={file.name} 
-      className="w-12 h-12 rounded-lg object-cover bg-muted shrink-0" 
+    <img
+      src={previewUrl}
+      alt={file.name}
+      className="w-12 h-12 rounded-lg object-cover bg-muted shrink-0"
     />
   );
 }
@@ -93,7 +93,7 @@ export default function UploadZone({ files, setFiles }: UploadZoneProps) {
 
     for (const file of Array.from(selectedFiles)) {
       // 1. Max size check (20MB)
-      if (file.size > 20 * 1024 * 1024) {
+      if (file.size > 40 * 1024 * 1024) {
         alert(`Le fichier "${file.name}" dépasse la taille maximale de 20 Mo.`);
         continue;
       }
@@ -131,7 +131,7 @@ export default function UploadZone({ files, setFiles }: UploadZoneProps) {
           const now = Date.now();
           const timeDiff = (now - lastTime) / 1000;
           let speedStr = uploadItem.speed;
-          
+
           if (timeDiff > 0.5 && progress > lastProgress) {
             const bytesDiff = (progress - lastProgress) * uploadItem.file.size / 100;
             const mbps = bytesDiff / 1024 / 1024 / timeDiff;
@@ -161,11 +161,11 @@ export default function UploadZone({ files, setFiles }: UploadZoneProps) {
         setFiles((prev) =>
           prev.map((f) =>
             f.id === uploadItem.id
-              ? { 
-                  ...f, 
-                  status: 'error', 
-                  error: error.message || 'Error occurred'
-                }
+              ? {
+                ...f,
+                status: 'error',
+                error: error.message || 'Error occurred'
+              }
               : f
           )
         );
@@ -178,7 +178,7 @@ export default function UploadZone({ files, setFiles }: UploadZoneProps) {
     if (!fileToRetry) return;
 
     setFiles(prev => prev.map(f => f.id === id ? { ...f, status: 'uploading', progress: 0 } : f));
-    
+
     let lastProgress = 0;
     let lastTime = Date.now();
 
@@ -187,7 +187,7 @@ export default function UploadZone({ files, setFiles }: UploadZoneProps) {
         const now = Date.now();
         const timeDiff = (now - lastTime) / 1000;
         let speedStr = fileToRetry.speed;
-        
+
         if (timeDiff > 0.5 && progress > lastProgress) {
           const bytesDiff = (progress - lastProgress) * fileToRetry.file.size / 100;
           const mbps = bytesDiff / 1024 / 1024 / timeDiff;
@@ -226,7 +226,7 @@ export default function UploadZone({ files, setFiles }: UploadZoneProps) {
 
   return (
     <div className="space-y-4">
-      <div 
+      <div
         className="w-full border-2 border-dashed border-border rounded-xl p-8 text-center hover:bg-muted/50 transition-colors cursor-pointer relative flex flex-col items-center justify-center min-h-[200px]"
         onClick={() => fileInputRef.current?.click()}
         onDragOver={(e) => e.preventDefault()}
@@ -262,7 +262,7 @@ export default function UploadZone({ files, setFiles }: UploadZoneProps) {
           {files.map(u => {
             const isError = u.status === 'error';
             const isSuccess = u.status === 'success';
-            
+
             return (
               <div key={u.id} className="flex items-center gap-4 bg-muted/30 p-4 rounded-xl border border-border">
                 <FilePreview file={u.file} url={u.url} />
@@ -272,7 +272,7 @@ export default function UploadZone({ files, setFiles }: UploadZoneProps) {
                       {u.file.name} ({(u.file.size / 1024 / 1024).toFixed(1)} MB)
                     </span>
                     <span className="text-muted-foreground shrink-0 text-xs font-medium">
-                      {isError 
+                      {isError
                         ? <span className="text-red-500">❌ {u.error || 'Failed'}</span>
                         : isSuccess
                           ? <span className="text-green-500 flex items-center gap-1">✅ Terminé</span>
@@ -292,7 +292,8 @@ export default function UploadZone({ files, setFiles }: UploadZoneProps) {
                     </span>
                   </div>
                   <div className="h-2.5 bg-muted rounded-full overflow-hidden w-full relative">
-                    <style dangerouslySetInnerHTML={{__html: `
+                    <style dangerouslySetInnerHTML={{
+                      __html: `
                       @keyframes progress-shimmer {
                         0% { background-position: 200% 0; }
                         100% { background-position: -200% 0; }
@@ -303,22 +304,21 @@ export default function UploadZone({ files, setFiles }: UploadZoneProps) {
                         animation: progress-shimmer 1.5s infinite linear;
                       }
                     `}} />
-                    <div 
-                      className={`h-full absolute left-0 top-0 transition-all duration-300 rounded-full ${
-                        isError 
-                          ? 'bg-red-500' 
-                          : isSuccess 
-                            ? 'bg-green-500' 
+                    <div
+                      className={`h-full absolute left-0 top-0 transition-all duration-300 rounded-full ${isError
+                          ? 'bg-red-500'
+                          : isSuccess
+                            ? 'bg-green-500'
                             : 'animate-progress-shimmer'
-                      }`}
+                        }`}
                       style={{ width: `${u.progress}%` }}
                     />
                   </div>
                 </div>
-                
+
                 {isError && (
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={(e) => { e.stopPropagation(); handleRetry(u.id); }}
                     className="p-2 bg-muted hover:bg-background border border-border rounded-lg transition-colors flex items-center gap-2 text-sm font-medium shrink-0"
                   >
@@ -337,7 +337,7 @@ export default function UploadZone({ files, setFiles }: UploadZoneProps) {
           })}
         </div>
       )}
-      
+
       {files.length > 0 && files.every(f => f.status === 'success') && (
         <div className="mt-4 p-4 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center justify-center gap-2 text-green-600 font-medium">
           <CheckCircle2 className="w-5 h-5" /> Tous les fichiers uploadés avec succès

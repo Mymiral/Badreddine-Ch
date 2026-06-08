@@ -76,7 +76,7 @@ const MyListings = () => {
           .eq('id', id);
 
         if (delErr) throw delErr;
-        
+
         setListings(listings.filter(listing => listing.id !== id));
       } catch (err) {
         console.error('Error deleting listing:', err);
@@ -155,30 +155,29 @@ const MyListings = () => {
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute top-4 left-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                      listing.type === 'sale' ? 'bg-brand-accent text-brand-primary' : 'bg-brand-secondary text-brand-white'
-                    }`}>
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${listing.type === 'sale' ? 'bg-brand-accent text-brand-primary' : 'bg-brand-secondary text-brand-white'
+                      }`}>
                       {listing.type === 'sale' ? t('publish.sale') : t('publish.rent')}
                     </span>
                   </div>
                 </div>
-                
+
                 <div className="p-6">
                   <h3 className="font-bold text-lg mb-2 line-clamp-1" title={listing.title}>
                     {listing.title}
                   </h3>
-                  
+
                   <div className="space-y-2 mb-6">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <MapPin className="w-4 h-4 text-brand-accent" />
-                      <span className="truncate">{listing.location}, {listing.city}</span>
+                      <span className="truncate">{listing.address}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <DollarSign className="w-4 h-4 text-brand-accent" />
+                      <span className="w-4 h-4 text-brand-accent mr-3">Dzd</span>
                       <span className="font-medium text-foreground">{formatPrice(listing.price)}</span>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center justify-between pt-4 border-t border-border">
                     <Link
                       to={`/property/${listing.id}`}
